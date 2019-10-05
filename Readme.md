@@ -1,9 +1,12 @@
+
 ### Running the server
 
-cd server
-npm start
+> cd server/
+
+> npm start
 
 ### Running the client
 
-cd app
-npm start
+> cd app/
+
+> npm start
