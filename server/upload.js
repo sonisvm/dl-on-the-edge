@@ -1,12 +1,19 @@
 const IncomingForm = require("formidable").IncomingForm;
+const path = require('path');
+const fs = require('fs');
 
 module.exports = function upload(req, res) {
   var form = new IncomingForm();
 
   form.on("file", (field, file) => {
-    // Do something with the file
-    // e.g. save it to the database
-    // you can access it using file.path
+      const tempPath = file.path;
+      const targetPath = path.join(__dirname, "./uploads/video.mp4");
+      fs.rename(tempPath, targetPath, err => {
+        if (err) {
+          return handleError(err, res);
+        }
+        res.status(200).send();
+      });
   });
   form.on("end", () => {
     res.json();

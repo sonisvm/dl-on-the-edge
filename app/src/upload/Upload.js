@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import Dropzone from "../dropzone/Dropzone";
 import "./Upload.css";
 import Progress from "../progress/Progress";
+import Video from '../video/Video';
 
 class Upload extends Component {
   constructor(props) {
@@ -10,16 +11,13 @@ class Upload extends Component {
       files: [],
       uploading: false,
       uploadProgress: {},
-      successfullUploaded: false
+      uploaded: false
     };
 
-    this.onFilesAdded = this.onFilesAdded.bind(this);
     this.uploadFiles = this.uploadFiles.bind(this);
-    this.sendRequest = this.sendRequest.bind(this);
-    this.renderActions = this.renderActions.bind(this);
   }
 
-  onFilesAdded(files) {
+  onFilesAdded = (files) => {
     this.setState(prevState => ({
       files: prevState.files.concat(files)
     }));
@@ -34,14 +32,14 @@ class Upload extends Component {
     try {
       await Promise.all(promises);
 
-      this.setState({ successfullUploaded: true, uploading: false });
+      this.setState({ uploaded: true, uploading: false });
     } catch (e) {
       // Not Production ready! Do some error handling here instead...
-      this.setState({ successfullUploaded: true, uploading: false });
+      this.setState({ uploaded: true, uploading: false });
     }
   }
 
-  sendRequest(file) {
+  sendRequest = (file) => {
     return new Promise((resolve, reject) => {
       const req = new XMLHttpRequest();
 
@@ -78,9 +76,9 @@ class Upload extends Component {
     });
   }
 
-  renderProgress(file) {
+  renderProgress = (file) => {
     const uploadProgress = this.state.uploadProgress[file.name];
-    if (this.state.uploading || this.state.successfullUploaded) {
+    if (this.state.uploading || this.state.uploaded) {
       return (
         <div className="ProgressWrapper">
           <Progress progress={uploadProgress ? uploadProgress.percentage : 0} />
@@ -98,12 +96,12 @@ class Upload extends Component {
     }
   }
 
-  renderActions() {
-    if (this.state.successfullUploaded) {
+  renderActions = () => {
+    if (this.state.uploaded) {
       return (
         <button
           onClick={() =>
-            this.setState({ files: [], successfullUploaded: false })
+            this.setState({ files: [], uploaded: false })
           }
         >
           Clear
@@ -123,28 +121,32 @@ class Upload extends Component {
 
   render() {
     return (
-      <div className="Upload">
-        <span className="Title">Upload Files</span>
-        <div className="Content">
-          <div>
-            <Dropzone
-              onFilesAdded={this.onFilesAdded}
-              disabled={this.state.uploading || this.state.successfullUploaded}
-            />
+      <div className="UploadComponent">
+        {this.state.uploaded===false ? (<div className="Upload">
+          <span className="Title">Upload Files</span>
+          <div className="Content">
+            <div>
+              <Dropzone
+                onFilesAdded={this.onFilesAdded}
+                disabled={this.state.uploading || this.state.uploaded}
+              />
+            </div>
+            <div className="Files">
+              {this.state.files.map(file => {
+                return (
+                  <div key={file.name} className="Row">
+                    <span className="Filename">{file.name}</span>
+                    {this.renderProgress(file)}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="Files">
-            {this.state.files.map(file => {
-              return (
-                <div key={file.name} className="Row">
-                  <span className="Filename">{file.name}</span>
-                  {this.renderProgress(file)}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="Actions">{this.renderActions()}</div>
+          <div className="Actions">{this.renderActions()}</div>
+        </div>):
+        <Video/>}
       </div>
+
     );
   }
 }
