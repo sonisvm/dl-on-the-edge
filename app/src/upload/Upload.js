@@ -144,7 +144,7 @@ class Upload extends Component {
           </div>
           <div className="Actions">{this.renderActions()}</div>
         </div>):
-        <Video/>}
+        <Video src="upload"/>}
       </div>
 
     );
