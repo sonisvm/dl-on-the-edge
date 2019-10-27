@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import "./App.css";
 import Upload from './upload/Upload';
-import Video from './video/Video';
+import WebCam from './WebCam';
 import Form from 'react-bootstrap/Form';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -35,7 +35,7 @@ class App extends Component {
     } else {
       models.add(model);
     }
-    console.log(models);
+
     this.setState({
       models: models
     });
@@ -122,7 +122,7 @@ class App extends Component {
                 </CardDeck>
               </Col>
               <Col md={9} className="screen">
-                {this.state.option? (this.state.option === "webcam" ? <Video src="webcam"/> : <Upload/>) : null}
+                {this.state.option? (this.state.option === "webcam" ? <WebCam/> : <Upload/>) : null}
               </Col>
             </Row>
           </Container>

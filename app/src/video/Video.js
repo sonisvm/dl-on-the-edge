@@ -5,18 +5,27 @@ import "./Video.css";
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
 
 class Video extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
+  model = null;
+  array = [];
 
   constructor(props) {
     super(props);
 
     this.state = {
       src: props.src,
-      videoSrc: props.video
+      videoSrc: props.video,
+      paused: false
     };
+
+    this.videoRef.current = document.createElement('video');
+    this.videoRef.current.src = props.video;
+    this.videoRef.current.ontimeupdate = this.drawFrame;
+    this.videoRef.current.muted = true;
   }
 
   detectFromVideoFrame = (model, video) => {
@@ -30,6 +39,41 @@ class Video extends Component {
           .catch(err => {
             console.log("Error from model " + err);
           });
+  }
+
+
+  drawFrame = (e) => {
+    if(!this.state.paused) {
+      console.log(" In draw frame");
+      e.target.pause();
+      const ctx = this.canvasRef.current.getContext("2d");
+      ctx.drawImage(e.target, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      this.canvasRef.current.toBlob(blob=>{
+        console.log("Created blob");
+        console.log(blob);
+        let reader = new FileReader();
+        reader.onload = file => {
+          console.log("Fetching results");
+          fetch("http://localhost:8000/detect_objects", {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body:JSON.stringify({data:file.target.result})
+               })
+               .then(res => {
+                 console.log("received response from server");
+                 this.showDetections(res.json().data);
+                 if (e.target.currentTime < e.target.duration) {
+                   e.target.play();
+                 }
+               });
+        }
+
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg');
+    }
   }
 
   showDetections = predictions => {
@@ -65,80 +109,42 @@ class Video extends Component {
     });
   };
 
-  componentDidMount() {
-    console.log("componentDidMount");
-      if(this.state.src === "webcam") {
-        if (navigator.mediaDevices.getUserMedia) {
-          // define a Promise that'll be used to load the webcam and read its frames
-          const webcamPromise = navigator.mediaDevices
-            .getUserMedia({
-              video: true,
-              audio: false,
-            })
-            .then(stream => {
-              // pass the current frame to the window.stream
-              window.stream = stream;
-              // pass the stream to the videoRef
-              this.videoRef.current.srcObject = stream;
-
-              return new Promise(resolve => {
-                this.videoRef.current.onloadedmetadata = () => {
-                  resolve();
-                };
-              });
-            }, (error) => {
-              console.log("Couldn't start the webcam")
-              console.error(error)
-            });
-
-          // define a Promise that'll be used to load the model
-          const loadlModelPromise = cocoSsd.load();
-
-          // resolve all the Promises
-          Promise.all([loadlModelPromise, webcamPromise])
-            .then(values => {
-              this.detectFromVideoFrame(values[0], this.videoRef.current);
-            })
-            .catch(error => {
-              console.error(error);
-            });
-        }
-      } else {
-        //this.videoRef.current.srcObject = this.videoSrc;
-        cocoSsd.load()
-                .then(value => {
-                  this.detectFromVideoFrame(value, this.videoRef.current);
-                })
-                .catch(error => {
-                  console.error("Error" + error);
-                });
-
-      }
-
-
+  startVideo = () => {
+    console.log(" Start video");
+    this.videoRef.current.play();
+    this.setState({paused:false});
   }
 
+  stopVideo = () => {
+    this.videoRef.current.pause();
+    this.setState({paused:true});
+  }
+
+  // {this.state.src==="upload" ?
+  //   (
+  //       <video id="videoPlayer"
+  //       src={this.state.videoSrc}
+  //       ref={this.videoRef}
+  //       onTimeUpdate = {this.drawFrame}
+  //       muted>
+  //       </video>
+  //     ):
+  //   (
+  //     <video
+  //       autoPlay
+  //       muted
+  //       ref={this.videoRef}
+  //     />
+  //
+  //   )}
   render() {
     return (
       <Row>
         <Col>
-        {this.state.src==="upload" ?
-          (
-              <video id="videoPlayer"
-              src={this.state.videoSrc}
-              ref={this.videoRef}
-              autoPlay
-              muted>
-              </video>
-            ):
-          (
-            <video
-              autoPlay
-              muted
-              ref={this.videoRef}
-            />
-
-          )}
+          <div>
+            <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
+            <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
+          </div>
           <canvas ref={this.canvasRef} width="720" height="500"/>
         </Col>
 

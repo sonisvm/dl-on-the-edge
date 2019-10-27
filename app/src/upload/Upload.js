@@ -5,7 +5,6 @@ import Video from '../video/Video';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Button from 'react-bootstrap/Button';
 
 class Upload extends Component {
   constructor(props) {
@@ -43,8 +42,7 @@ class Upload extends Component {
   }
 
   render() {
-    console.log("Reneder");
-    console.log(this.state);
+
     return (
       <Container>
         {this.state.uploaded===false ? (
@@ -68,16 +66,7 @@ class Upload extends Component {
               </div>
             </Col>
           </Row>):
-        <Video src="upload" video={this.state.videoSrc}/>}
-        {this.state.uploaded? (
-          <Row>
-            <Col>
-              <div>
-                <Button variant="outline-primary">Start</Button>
-                <Button variant="outline-primary">Stop</Button>
-              </div>
-            </Col>
-          </Row>) : null}
+        <Video video={this.state.videoSrc}/>}
       </Container>
     );
   }
