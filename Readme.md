@@ -3,11 +3,15 @@
 
 > cd server/
 
+> npm install
+
 > npm start
 
 ### Running the client
 
 > cd app/
+
+> npm install
 
 > npm start
 
