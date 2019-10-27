@@ -105,36 +105,14 @@ class Video extends Component {
         }
       } else {
         //this.videoRef.current.srcObject = this.videoSrc;
+        cocoSsd.load()
+                .then(value => {
+                  this.detectFromVideoFrame(value, this.videoRef.current);
+                })
+                .catch(error => {
+                  console.error("Error" + error);
+                });
 
-        // const loadlModelPromise = cocoSsd.load();
-        //
-        // const videoPromise = fetch("http://localhost:8000/video")
-        //                     .then(response => response.body)
-        //                     .then(body => {
-        //                       window.stream = body;
-        //                       // pass the stream to the videoRef
-        //                       this.videoRef.current.srcObject = body;
-        //
-        //                       return new Promise(resolve => {
-        //                         this.videoRef.current.onloadedmetadata = () => {
-        //                           resolve();
-        //                         };
-        //                       });
-        //                     })
-        //                     .catch(err => {
-        //                       console.log("Error while fetching ", err);
-        //                     });
-        //
-        //
-        // Promise.all([loadlModelPromise, videoPromise])
-        //   .then(values => {
-        //     console.log("Promise succeeded");
-        //
-        //     this.detectFromVideoFrame(values[0], this.videoRef.current);
-        //   })
-        //   .catch(error => {
-        //     console.error("Error" + error);
-        //   });
       }
 
 
@@ -148,6 +126,8 @@ class Video extends Component {
           (
               <video id="videoPlayer"
               src={this.state.videoSrc}
+              ref={this.videoRef}
+              autoPlay
               muted>
               </video>
             ):
