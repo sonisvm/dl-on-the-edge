@@ -20,10 +20,8 @@ class Video extends Component {
   }
 
   detectFromVideoFrame = (model, video) => {
-    console.log("detectFromVideoFrame");
     model.detect(video)
           .then(predictions => {
-            console.log("Promise succeeded 2");
             this.showDetections(predictions);
             requestAnimationFrame(()=>{
               this.detectFromVideoFrame(model, video);
@@ -143,7 +141,6 @@ class Video extends Component {
   }
 
   render() {
-    console.log(this.state);
     return (
       <Row>
         <Col>
@@ -162,7 +159,7 @@ class Video extends Component {
             />
 
           )}
-          <canvas ref={this.canvasRef} />
+          <canvas ref={this.canvasRef} width="720" height="500"/>
         </Col>
 
       </Row>

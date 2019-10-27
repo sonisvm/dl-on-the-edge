@@ -1,5 +1,6 @@
 video, canvas {
-  width: 90vh;
-  height: 70vh;
+  margin-top: 2vh;
   position: fixed;
+  width: 80vh;
+  height: 63vh;
 }

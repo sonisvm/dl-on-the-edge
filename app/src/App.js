@@ -44,7 +44,7 @@ class App extends Component {
   render() {
     return (
         <Container className="main" fluid={true}>
-          <Container className="dashboard">
+          <Container className="dashboard" fluid={true}>
             <Row>
               <Col className="title">
                 <h2>Deep Learning on the Edge</h2>
@@ -110,7 +110,7 @@ class App extends Component {
                           />
                           <Form.Check
                             type="radio"
-                            label="Emsemble"
+                            label="Ensemble"
                             id="ensemble"
                             value = "ensemble"
                             checked = {this.state.execution_mode? this.state.execution_mode==="ensemble" : false}
