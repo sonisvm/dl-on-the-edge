@@ -21,10 +21,8 @@ class Dropzone extends Component {
 
   onFilesAdded(evt) {
     if (this.props.disabled) return;
-    const files = evt.target.files;
     if (this.props.onFilesAdded) {
-      const array = this.fileListToArray(files);
-      this.props.onFilesAdded(array);
+      this.props.onFilesAdded(evt);
     }
   }
 
@@ -71,7 +69,6 @@ class Dropzone extends Component {
           ref={this.fileInputRef}
           className="FileInput"
           type="file"
-          multiple
           onChange={this.onFilesAdded}
         />
         <img
@@ -79,7 +76,6 @@ class Dropzone extends Component {
           className="Icon"
           src="baseline-cloud_upload-24px.svg"
         />
-        <span>Upload Files</span>
       </div>
     );
   }

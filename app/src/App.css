@@ -17,3 +17,53 @@
     0 5px 15px 0 rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
+
+/* New classes */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.main {
+  background-color: #F5F5F5;
+  height: 100vh;
+  padding: 40px;
+}
+
+.dashboard {
+  background-color: white;
+  height: 90vh;
+}
+
+.title {
+  margin: 20px;
+  background-color: white;
+}
+
+.options {
+  margin-bottom: 5px;
+}
+
+.screen {
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: calc(.25rem - 1px);
+}
+
+.viewArea {
+  padding: 10px;
+  height: 70vh;
+}
+
+.optionCards{
+  flex-flow: column;
+}
+
+@media (min-width:576px) {
+ .card-deck .card {
+  margin-bottom:10px;
+ }
+}

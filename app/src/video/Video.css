@@ -1,1 +1,5 @@
-
+video, canvas {
+  width: 90vh;
+  height: 70vh;
+  position: fixed;
+}

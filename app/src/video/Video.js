@@ -3,38 +3,39 @@
 import React, {Component} from 'react';
 import "./Video.css";
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 
 class Video extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
 
-  styles = {
-    position: 'fixed',
-    top: 150,
-    left: 150,
-  };
   constructor(props) {
-    super();
+    super(props);
 
     this.state = {
-      src: props.src
+      src: props.src,
+      videoSrc: props.video
     };
   }
 
   detectFromVideoFrame = (model, video) => {
+    console.log("detectFromVideoFrame");
     model.detect(video)
           .then(predictions => {
+            console.log("Promise succeeded 2");
             this.showDetections(predictions);
             requestAnimationFrame(()=>{
               this.detectFromVideoFrame(model, video);
             });
           })
           .catch(err => {
-            console.log(err);
+            console.log("Error from model " + err);
           });
   }
 
   showDetections = predictions => {
+    console.log("showDetections");
     const ctx = this.canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     const font = "24px helvetica";
@@ -67,62 +68,104 @@ class Video extends Component {
   };
 
   componentDidMount() {
-    if (navigator.mediaDevices.getUserMedia) {
-      // define a Promise that'll be used to load the webcam and read its frames
-      const webcamPromise = navigator.mediaDevices
-        .getUserMedia({
-          video: true,
-          audio: false,
-        })
-        .then(stream => {
-          // pass the current frame to the window.stream
-          window.stream = stream;
-          // pass the stream to the videoRef
-          this.videoRef.current.srcObject = stream;
+    console.log("componentDidMount");
+      if(this.state.src === "webcam") {
+        if (navigator.mediaDevices.getUserMedia) {
+          // define a Promise that'll be used to load the webcam and read its frames
+          const webcamPromise = navigator.mediaDevices
+            .getUserMedia({
+              video: true,
+              audio: false,
+            })
+            .then(stream => {
+              // pass the current frame to the window.stream
+              window.stream = stream;
+              // pass the stream to the videoRef
+              this.videoRef.current.srcObject = stream;
 
-          return new Promise(resolve => {
-            this.videoRef.current.onloadedmetadata = () => {
-              resolve();
-            };
-          });
-        }, (error) => {
-          console.log("Couldn't start the webcam")
-          console.error(error)
-        });
+              return new Promise(resolve => {
+                this.videoRef.current.onloadedmetadata = () => {
+                  resolve();
+                };
+              });
+            }, (error) => {
+              console.log("Couldn't start the webcam")
+              console.error(error)
+            });
 
-      // define a Promise that'll be used to load the model
-      const loadlModelPromise = cocoSsd.load();
+          // define a Promise that'll be used to load the model
+          const loadlModelPromise = cocoSsd.load();
 
-      // resolve all the Promises
-      Promise.all([loadlModelPromise, webcamPromise])
-        .then(values => {
-          this.detectFromVideoFrame(values[0], this.videoRef.current);
-        })
-        .catch(error => {
-          console.error(error);
-        });
-    }
+          // resolve all the Promises
+          Promise.all([loadlModelPromise, webcamPromise])
+            .then(values => {
+              this.detectFromVideoFrame(values[0], this.videoRef.current);
+            })
+            .catch(error => {
+              console.error(error);
+            });
+        }
+      } else {
+        //this.videoRef.current.srcObject = this.videoSrc;
+
+        // const loadlModelPromise = cocoSsd.load();
+        //
+        // const videoPromise = fetch("http://localhost:8000/video")
+        //                     .then(response => response.body)
+        //                     .then(body => {
+        //                       window.stream = body;
+        //                       // pass the stream to the videoRef
+        //                       this.videoRef.current.srcObject = body;
+        //
+        //                       return new Promise(resolve => {
+        //                         this.videoRef.current.onloadedmetadata = () => {
+        //                           resolve();
+        //                         };
+        //                       });
+        //                     })
+        //                     .catch(err => {
+        //                       console.log("Error while fetching ", err);
+        //                     });
+        //
+        //
+        // Promise.all([loadlModelPromise, videoPromise])
+        //   .then(values => {
+        //     console.log("Promise succeeded");
+        //
+        //     this.detectFromVideoFrame(values[0], this.videoRef.current);
+        //   })
+        //   .catch(error => {
+        //     console.error("Error" + error);
+        //   });
+      }
+
+
   }
 
   render() {
-    console.log("rendering video");
+    console.log(this.state);
     return (
-      <div className="Video">
+      <Row>
+        <Col>
         {this.state.src==="upload" ?
-              (<video id="videoPlayer" controls>
-                <source src="http://localhost:8000/video" type="video/mp4"/>
-              </video> ):
-              (<div>
-                <video
-                  style={this.styles}
-                  autoPlay
-                  muted
-                  ref={this.videoRef}
-                />
-                <canvas style={this.styles} ref={this.canvasRef} width="720" height="650" />
-              </div>)
-              }
-      </div>
+          (
+              <video id="videoPlayer"
+              src={this.state.videoSrc}
+              muted>
+              </video>
+            ):
+          (
+            <video
+              autoPlay
+              muted
+              ref={this.videoRef}
+            />
+
+          )}
+          <canvas ref={this.canvasRef} />
+        </Col>
+
+      </Row>
     );
   }
 }
