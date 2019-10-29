@@ -1,11 +1,9 @@
 
 ### Running the server
 
-> cd server/
+The server is a simple python server. It send some sample prediction data.
 
-> npm install
-
-> npm start
+In the current directory, run python3 server.py
 
 ### Running the client
 
