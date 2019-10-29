@@ -42,6 +42,7 @@ class App extends Component {
   }
 
   render() {
+    let showScreen = this.state.option && this.state.execution_mode && this.state.models.size!==0;
     return (
         <Container className="main" fluid={true}>
           <Container className="dashboard" fluid={true}>
@@ -122,7 +123,10 @@ class App extends Component {
                 </CardDeck>
               </Col>
               <Col md={9} className="screen">
-                {this.state.option? (this.state.option === "webcam" ? <WebCam/> : <Upload/>) : null}
+                {showScreen?
+                  (this.state.option === "webcam" ? <WebCam execution_mode={this.state.execution_mode} models={this.state.models}/>
+                  : <Upload execution_mode={this.state.execution_mode} models={this.state.models}/>)
+                  : null}
               </Col>
             </Row>
           </Container>

@@ -10,11 +10,10 @@ class Upload extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      files: [],
       uploading: false,
-      uploadProgress: {},
       uploaded: false,
-      videoSrc: ''
+      videoSrc: '',
+      props: props
     };
 
   }
@@ -35,10 +34,6 @@ class Upload extends Component {
 
     reader.readAsDataURL(event.target.files[0]);
 
-
-    // this.setState(prevState => ({
-    //   files: prevState.files.concat(files)
-    // }));
   }
 
   render() {
@@ -66,7 +61,7 @@ class Upload extends Component {
               </div>
             </Col>
           </Row>):
-        <Video video={this.state.videoSrc}/>}
+        <Video video={this.state.videoSrc} execution_mode={this.state.props.execution_mode} models={this.state.props.models}/>}
       </Container>
     );
   }

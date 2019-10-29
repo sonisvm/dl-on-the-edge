@@ -17,7 +17,8 @@ class Video extends Component {
     super(props);
 
     this.state = {
-      paused: false
+      paused: false,
+      props: props
     };
 
     this.videoRef.current = document.createElement('video');
@@ -41,7 +42,11 @@ class Video extends Component {
                    headers: {
                        'Content-Type': 'application/json'
                    },
-                   body:JSON.stringify({data:file.target.result})
+                   body:JSON.stringify({
+                     image:file.target.result,
+                     mode: this.state.props.execution_mode,
+                     models: Array.from(this.state.props.models)
+                   })
                })
                .then(res => {
                  return res.json();

@@ -60,7 +60,9 @@ CORS(app)
 
 @app.route('/detect_objects', methods = ['POST'])
 def postJsonHandler():
-    content = request.get_json()['data']
+    content = request.get_json()
+    print(content['mode'])
+    print(content['models'])
     return jsonify([{'bbox':[0,0,200,200], 'class':'person', 'score': 0.838}])
 
 app.run(host='0.0.0.0', port= 8000)

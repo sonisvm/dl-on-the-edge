@@ -5,17 +5,20 @@ import React, {Component} from 'react';
 import "./video/Video.css";
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
 
 class WebCam extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
   bbCanvasRef = React.createRef();
 
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
     this.state = {
-      paused:false
+      paused:false,
+      props: props,
+      error: false
     };
   }
 
@@ -29,12 +32,19 @@ class WebCam extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
+          console.log(this.state.props.execution_mode);
           fetch("http://localhost:8000/detect_objects", {
                    method: 'POST',
                    headers: {
                        'Content-Type': 'application/json'
                    },
-                   body:JSON.stringify({data:file.target.result})
+                   body:JSON.stringify(
+                     {
+                      image:file.target.result,
+                      mode: this.state.props.execution_mode,
+                      models: Array.from(this.state.props.models)
+                      }
+                   )
                })
                .then(res => {
                  return res.json();
@@ -87,7 +97,8 @@ class WebCam extends Component {
     });
   };
 
-  componentDidMount() {
+  startVideo = () => {
+      this.setState({paused:false})
       if (navigator.mediaDevices.getUserMedia) {
         // define a Promise that'll be used to load the webcam and read its frames
         navigator.mediaDevices
@@ -113,13 +124,22 @@ class WebCam extends Component {
             console.error(error)
           });
 
-
       }
   }
+
+  stopVideo = () => {
+    window.stream.getTracks().forEach(track => track.stop())
+    this.setState({paused:true})
+  }
+
   render() {
     return (
       <Row>
         <Col>
+          <div>
+            <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
+            <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
+          </div>
           <canvas ref={this.canvasRef} width="720" height="500"/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>
         </Col>
