@@ -1,39 +1,62 @@
 //reference : https://nanonets.com/blog/object-detection-tensorflow-js/
+// reference: http://html5doctor.com/video-canvas-magic/
 
 import React, {Component} from 'react';
 import "./video/Video.css";
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
 class WebCam extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
+  bbCanvasRef = React.createRef();
 
   constructor() {
     super();
 
     this.state = {
+      paused:false
     };
-
   }
 
-  detectFromVideoFrame = (model, video) => {
-    model.detect(video)
-          .then(predictions => {
-            this.showDetections(predictions);
-            requestAnimationFrame(()=>{
-              this.detectFromVideoFrame(model, video);
-            });
-          })
-          .catch(err => {
-            console.log("Error from model " + err);
-          });
+  drawFrame = () => {
+    if(!this.state.paused) {
+      this.videoRef.current.pause();
+      const ctx = this.canvasRef.current.getContext("2d");
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(this.videoRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      this.canvasRef.current.toBlob(blob=>{
+        let reader = new FileReader();
+        reader.onload = file => {
+          fetch("http://localhost:8000/detect_objects", {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body:JSON.stringify({data:file.target.result})
+               })
+               .then(res => {
+                 return res.json();
+               })
+               .then(data => {
+                 this.showDetections(data);
+
+                 requestAnimationFrame(()=>{
+                   if (this.videoRef.current.currentTime < this.videoRef.current.duration) {
+                     this.videoRef.current.play();
+                   }
+                 });
+               });
+        }
+
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg');
+    }
   }
 
   showDetections = predictions => {
-    console.log("showDetections");
-    const ctx = this.canvasRef.current.getContext("2d");
+    const ctx = this.bbCanvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     const font = "24px helvetica";
     ctx.font = font;
@@ -67,7 +90,7 @@ class WebCam extends Component {
   componentDidMount() {
       if (navigator.mediaDevices.getUserMedia) {
         // define a Promise that'll be used to load the webcam and read its frames
-        const webcamPromise = navigator.mediaDevices
+        navigator.mediaDevices
           .getUserMedia({
             video: true,
             audio: false,
@@ -76,41 +99,29 @@ class WebCam extends Component {
             // pass the current frame to the window.stream
             window.stream = stream;
             // pass the stream to the videoRef
+            this.videoRef.current = document.createElement('video');
             this.videoRef.current.srcObject = stream;
+            this.videoRef.current.onplay = this.drawFrame;
+            this.videoRef.current.muted = true;
 
-            return new Promise(resolve => {
-              this.videoRef.current.onloadedmetadata = () => {
-                resolve();
-              };
-            });
+            this.videoRef.current.onloadedmetadata = () => {
+              this.videoRef.current.play();
+            };
+
           }, (error) => {
             console.log("Couldn't start the webcam")
             console.error(error)
           });
 
-        // define a Promise that'll be used to load the model
-        const loadlModelPromise = cocoSsd.load();
 
-        // resolve all the Promises
-        Promise.all([loadlModelPromise, webcamPromise])
-          .then(values => {
-            this.detectFromVideoFrame(values[0], this.videoRef.current);
-          })
-          .catch(error => {
-            console.error(error);
-          });
       }
   }
   render() {
     return (
       <Row>
         <Col>
-            <video
-              autoPlay
-              muted
-              ref={this.videoRef}
-            />
           <canvas ref={this.canvasRef} width="720" height="500"/>
+          <canvas ref={this.bbCanvasRef} width="720" height="500"/>
         </Col>
 
       </Row>

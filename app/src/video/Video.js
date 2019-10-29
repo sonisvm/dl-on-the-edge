@@ -2,7 +2,6 @@
 
 import React, {Component} from 'react';
 import "./Video.css";
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
@@ -10,6 +9,7 @@ import Button from 'react-bootstrap/Button';
 class Video extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
+  bbCanvasRef = React.createRef();
   model = null;
   array = [];
 
@@ -17,44 +17,25 @@ class Video extends Component {
     super(props);
 
     this.state = {
-      src: props.src,
-      videoSrc: props.video,
       paused: false
     };
 
     this.videoRef.current = document.createElement('video');
     this.videoRef.current.src = props.video;
-    this.videoRef.current.ontimeupdate = this.drawFrame;
+    this.videoRef.current.onplay = this.drawFrame;
     this.videoRef.current.muted = true;
   }
 
-  detectFromVideoFrame = (model, video) => {
-    model.detect(video)
-          .then(predictions => {
-            this.showDetections(predictions);
-            requestAnimationFrame(()=>{
-              this.detectFromVideoFrame(model, video);
-            });
-          })
-          .catch(err => {
-            console.log("Error from model " + err);
-          });
-  }
-
-
-  drawFrame = (e) => {
+  drawFrame = () => {
     if(!this.state.paused) {
-      console.log(" In draw frame");
-      e.target.pause();
+      this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
-      ctx.drawImage(e.target, 0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(this.videoRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
       this.canvasRef.current.toBlob(blob=>{
-        console.log("Created blob");
-        console.log(blob);
         let reader = new FileReader();
         reader.onload = file => {
-          console.log("Fetching results");
           fetch("http://localhost:8000/detect_objects", {
                    method: 'POST',
                    headers: {
@@ -63,11 +44,17 @@ class Video extends Component {
                    body:JSON.stringify({data:file.target.result})
                })
                .then(res => {
-                 console.log("received response from server");
-                 this.showDetections(res.json().data);
-                 if (e.target.currentTime < e.target.duration) {
-                   e.target.play();
-                 }
+                 return res.json();
+               })
+               .then(data => {
+                 this.showDetections(data);
+
+                 requestAnimationFrame(()=>{
+                   if (this.videoRef.current.currentTime < this.videoRef.current.duration) {
+                     this.videoRef.current.play();
+                     //this.drawFrame();
+                   }
+                 });
                });
         }
 
@@ -77,8 +64,7 @@ class Video extends Component {
   }
 
   showDetections = predictions => {
-    console.log("showDetections");
-    const ctx = this.canvasRef.current.getContext("2d");
+    const ctx = this.bbCanvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     const font = "24px helvetica";
     ctx.font = font;
@@ -110,7 +96,6 @@ class Video extends Component {
   };
 
   startVideo = () => {
-    console.log(" Start video");
     this.videoRef.current.play();
     this.setState({paused:false});
   }
@@ -120,23 +105,6 @@ class Video extends Component {
     this.setState({paused:true});
   }
 
-  // {this.state.src==="upload" ?
-  //   (
-  //       <video id="videoPlayer"
-  //       src={this.state.videoSrc}
-  //       ref={this.videoRef}
-  //       onTimeUpdate = {this.drawFrame}
-  //       muted>
-  //       </video>
-  //     ):
-  //   (
-  //     <video
-  //       autoPlay
-  //       muted
-  //       ref={this.videoRef}
-  //     />
-  //
-  //   )}
   render() {
     return (
       <Row>
@@ -146,6 +114,7 @@ class Video extends Component {
             <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
           </div>
           <canvas ref={this.canvasRef} width="720" height="500"/>
+          <canvas ref={this.bbCanvasRef} width="720" height="500"/>
         </Col>
 
       </Row>
