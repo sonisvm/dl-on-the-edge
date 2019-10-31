@@ -111,12 +111,14 @@ class Video extends Component {
   }
 
   render() {
+    console.log(this.state);
     return (
       <Row>
         <Col>
           <div>
             <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
             <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
+            <Button variant="outline-primary" onClick={this.state.props.reset}>Reset</Button>
           </div>
           <canvas ref={this.canvasRef} width="720" height="500"/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>

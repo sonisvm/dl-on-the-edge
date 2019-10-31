@@ -27,7 +27,6 @@ class App extends Component {
   }
 
   addModel = event => {
-    console.log("in addModel");
     const model = event.currentTarget.value;
     let models = this.state.models;
     if (models.has(model)) {
@@ -42,6 +41,8 @@ class App extends Component {
   }
 
   render() {
+    console.log("Redner in App");
+    console.log("State in APp",this.state);
     let showScreen = this.state.option && this.state.execution_mode && this.state.models.size!==0;
     return (
         <Container className="main" fluid={true}>
@@ -60,11 +61,20 @@ class App extends Component {
                       <Form>
                         <Form.Check
                           type="radio"
-                          label="Upload video"
+                          label="Upload a video (.mp4)"
                           name="upload"
                           id="upload"
                           value = "upload"
                           checked = {this.state.option? this.state.option==="upload" : false}
+                          onChange = {this.setOption}
+                        />
+                        <Form.Check
+                          type="radio"
+                          label="Upload an image (.jpg, .png)"
+                          name="image"
+                          id="image"
+                          value = "image"
+                          checked = {this.state.option? this.state.option==="image" : false}
                           onChange = {this.setOption}
                         />
                         <Form.Check
@@ -76,6 +86,7 @@ class App extends Component {
                           checked = {this.state.option? this.state.option==="webcam" : false}
                           onChange = {this.setOption}
                         />
+
                       </Form>
                     </Card.Body>
                   </Card>
@@ -121,11 +132,13 @@ class App extends Component {
                     </Card.Body>
                   </Card>
                 </CardDeck>
+
               </Col>
               <Col md={9} className="screen">
                 {showScreen?
-                  (this.state.option === "webcam" ? <WebCam execution_mode={this.state.execution_mode} models={this.state.models}/>
-                  : <Upload execution_mode={this.state.execution_mode} models={this.state.models}/>)
+                  (this.state.option === "webcam" ?
+                  <WebCam execution_mode={this.state.execution_mode} models={this.state.models}/>
+                  : <Upload option={this.state.option} execution_mode={this.state.execution_mode} models={this.state.models}/>)
                   : null}
               </Col>
             </Row>

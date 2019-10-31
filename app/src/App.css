@@ -1,22 +1,3 @@
-.App {
-  text-align: center;
-  background-color: rgb(206, 213, 223);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: top;
-  font-size: calc(10px + 2vmin);
-}
-
-.Card {
-  background-color: white;
-  padding: 32px;
-  margin: 20px;
-  height: 700px;
-  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.11),
-    0 5px 15px 0 rgba(0, 0, 0, 0.08);
-  box-sizing: border-box;
-}
 
 /* New classes */
 
@@ -48,10 +29,6 @@ body {
   margin-bottom: 5px;
 }
 
-.screen {
-  border: 1px solid rgba(0,0,0,.125);
-  border-radius: calc(.25rem - 1px);
-}
 
 .viewArea {
   padding: 10px;
