@@ -15,15 +15,11 @@ class WebCam extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      paused:false,
-      props: props,
-      error: false
-    };
+    this.paused = false;
   }
 
   drawFrame = () => {
-    if(!this.state.paused) {
+    if(!this.paused) {
       this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -32,7 +28,6 @@ class WebCam extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          console.log(this.state.props.execution_mode);
           fetch("http://localhost:8000/detect_objects", {
                    method: 'POST',
                    headers: {
@@ -41,8 +36,8 @@ class WebCam extends Component {
                    body:JSON.stringify(
                      {
                       image:file.target.result,
-                      mode: this.state.props.execution_mode,
-                      models: Array.from(this.state.props.models)
+                      mode: this.props.execution_mode,
+                      models: Array.from(this.props.models)
                       }
                    )
                })
@@ -53,7 +48,7 @@ class WebCam extends Component {
                  this.showDetections(data);
 
                  requestAnimationFrame(()=>{
-                   if (this.videoRef.current.currentTime < this.videoRef.current.duration) {
+                   if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
                      this.videoRef.current.play();
                    }
                  });
@@ -98,7 +93,7 @@ class WebCam extends Component {
   };
 
   startVideo = () => {
-      this.setState({paused:false})
+      this.paused = false;
       if (navigator.mediaDevices.getUserMedia) {
         // define a Promise that'll be used to load the webcam and read its frames
         navigator.mediaDevices
@@ -129,7 +124,7 @@ class WebCam extends Component {
 
   stopVideo = () => {
     window.stream.getTracks().forEach(track => track.stop())
-    this.setState({paused:true})
+    this.paused = true;
   }
 
   render() {

@@ -10,25 +10,24 @@ class Image extends Component {
   imageRef = React.createRef();
   bbCanvasRef = React.createRef();
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      props: props
-    };
+  componentDidUpdate(prevProps) {
+    this.getPredictions();
   }
 
-
   componentDidMount() {
+    this.getPredictions();
+  }
+
+  getPredictions = () => {
     fetch("http://localhost:8000/detect_objects", {
              method: 'POST',
              headers: {
                  'Content-Type': 'application/json'
              },
              body:JSON.stringify({
-               image:this.state.props.src,
-               mode: this.state.props.execution_mode,
-               models: Array.from(this.state.props.models)
+               image:this.props.src,
+               mode: this.props.execution_mode,
+               models: Array.from(this.props.models)
              })
          })
          .then(res => {
@@ -76,8 +75,7 @@ class Image extends Component {
     return (
       <Row>
         <Col>
-          <Button variant="outline-primary" onClick={this.state.props.reset}>Reset</Button>
-          <img src={this.state.props.src} width="720" height="500" alt="uploading..."/>
+          <img src={this.props.src} width="720" height="500" alt="uploading..."/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>
         </Col>
 

@@ -10,25 +10,17 @@ class Video extends Component {
   videoRef = React.createRef();
   canvasRef = React.createRef();
   bbCanvasRef = React.createRef();
-  model = null;
-  array = [];
+
 
   constructor(props) {
     super(props);
 
-    this.state = {
-      paused: false,
-      props: props
-    };
+    this.paused = false;
 
-    this.videoRef.current = document.createElement('video');
-    this.videoRef.current.src = props.video;
-    this.videoRef.current.onplay = this.drawFrame;
-    this.videoRef.current.muted = true;
   }
 
   drawFrame = () => {
-    if(!this.state.paused) {
+    if(!this.paused) {
       this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -44,8 +36,8 @@ class Video extends Component {
                    },
                    body:JSON.stringify({
                      image:file.target.result,
-                     mode: this.state.props.execution_mode,
-                     models: Array.from(this.state.props.models)
+                     mode: this.props.execution_mode,
+                     models: Array.from(this.props.models)
                    })
                })
                .then(res => {
@@ -55,9 +47,8 @@ class Video extends Component {
                  this.showDetections(data);
 
                  requestAnimationFrame(()=>{
-                   if (this.videoRef.current.currentTime < this.videoRef.current.duration) {
+                   if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
                      this.videoRef.current.play();
-                     //this.drawFrame();
                    }
                  });
                });
@@ -66,6 +57,13 @@ class Video extends Component {
         reader.readAsDataURL(blob);
       }, 'image/jpeg');
     }
+  }
+
+  componentDidMount() {
+    this.videoRef.current = document.createElement('video');
+    this.videoRef.current.src = this.props.src;
+    this.videoRef.current.onplay = this.drawFrame;
+    this.videoRef.current.muted = true;
   }
 
   showDetections = predictions => {
@@ -102,23 +100,21 @@ class Video extends Component {
 
   startVideo = () => {
     this.videoRef.current.play();
-    this.setState({paused:false});
+    this.paused = false;
   }
 
   stopVideo = () => {
     this.videoRef.current.pause();
-    this.setState({paused:true});
+    this.paused = true;
   }
 
   render() {
-    console.log(this.state);
     return (
       <Row>
         <Col>
           <div>
             <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
             <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
-            <Button variant="outline-primary" onClick={this.state.props.reset}>Reset</Button>
           </div>
           <canvas ref={this.canvasRef} width="720" height="500"/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>
