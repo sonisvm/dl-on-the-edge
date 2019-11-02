@@ -7,7 +7,7 @@
 > npm start
 
 
-Server runs on port 8000 and client runs on port 3000.
+Server runs on port 5000 and client runs on port 3000.
 
 ### Running the server
 
