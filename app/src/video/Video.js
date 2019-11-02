@@ -29,7 +29,7 @@ class Video extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          fetch("http://128.61.59.46:5000/detect_objects", {
+          fetch("http://10.182.157.59:5000/detect_objects", {
                    method: 'POST',
                    headers: {
                        'Content-Type': 'application/json'
