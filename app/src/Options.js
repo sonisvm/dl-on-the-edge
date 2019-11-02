@@ -1,10 +1,8 @@
 import React, { Component } from "react";
-import "./App.css";
+import "./Options.css";
 import Upload from './upload/Upload';
 import ObjectDetector from './ObjectDetector';
-import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import ListGroup from 'react-bootstrap/ListGroup';
 
 class Options extends Component {
@@ -24,6 +22,9 @@ class Options extends Component {
     });
   }
 
+  startOver = () => {
+    this.setState({option: ''});
+  }
 
   render() {
     let option = this.state.option;
@@ -31,27 +32,23 @@ class Options extends Component {
       if (option === "upload") {
         return <Upload/>;
       } else {
-        return <ObjectDetector type="webcam"/>;
+        return <ObjectDetector type="webcam" back={this.startOver}/>;
       }
     } else {
       return (
-        <Container>
           <Row className="viewArea">
-            <Col>
-              <ListGroup>
-                <ListGroup.Item action onClick={this.setOption} value="upload">
-                  Upload a Video
+              <ListGroup className="optionList">
+                <ListGroup.Item action onClick={this.setOption} value="upload" className="rounded-circle option">
+                  <i className="fa fa-file-video-o fa-4x" aria-hidden="true"></i>
                 </ListGroup.Item>
-                <ListGroup.Item action onClick={this.setOption} value="upload">
-                  Upload an Image
+                <ListGroup.Item action onClick={this.setOption} value="upload" className="rounded-circle option">
+                  <i className="fa fa-file-image-o fa-4x" aria-hidden="true"></i>
                 </ListGroup.Item>
-                <ListGroup.Item action onClick={this.setOption} value="webcam">
-                  Use webcam
+                <ListGroup.Item action onClick={this.setOption} value="webcam" className="rounded-circle option">
+                <i className="fa fa-video-camera fa-4x" aria-hidden="true"></i>
                 </ListGroup.Item>
               </ListGroup>
-            </Col>
           </Row>
-        </Container>
       );
     }
   }

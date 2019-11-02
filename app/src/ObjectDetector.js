@@ -9,6 +9,9 @@ import Card from 'react-bootstrap/Card';
 import CardDeck from 'react-bootstrap/CardDeck';
 import {modelOptions} from './modelOptions';
 import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import './ObjectDetector.css';
+
 
 class ObjectDetector extends Component {
   constructor(props){
@@ -21,6 +24,7 @@ class ObjectDetector extends Component {
   }
 
   addModel = event => {
+
     const model = event.currentTarget.value;
     let models = this.state.models;
     if (models.has(model)) {
@@ -28,6 +32,7 @@ class ObjectDetector extends Component {
     } else {
       models.add(model);
     }
+    console.log(models);
 
     this.setState({
       models: models
@@ -53,22 +58,29 @@ class ObjectDetector extends Component {
     return (
       <Container>
         <Row>
-          <Col md={3}>
+          <Button variant="link" onClick={this.props.back} className="backButton">
+            <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
+          </Button>
+        </Row>
+        <Row>
+          <Col md={4}>
             <CardDeck className="optionCards">
-              <Card className="options">
-                <Card.Header>Models</Card.Header>
+              <Card className="modelSelector">
+                <Card.Header>Select the model</Card.Header>
                 <Card.Body>
                   <Form>
                     {modelOptions.map(option => {
-                      return (<Form.Check
-                        key={option.id}
-                        type="checkbox"
-                        label={option.display_name}
-                        id={option.id}
-                        value = {option.id}
-                        checked = {this.state.models.has(option.id)}
-                        onChange = {this.addModel}
-                      />);
+                      return (
+                          <Form.Check
+                            key={option.id}
+                            type="checkbox"
+                            label={option.display_name}
+                            id={option.id}
+                            value = {option.id}
+                            checked = {this.state.models.has(option.id)}
+                            onChange = {this.addModel}
+                          />
+                      );
                     })}
                   </Form>
                 </Card.Body>
@@ -98,7 +110,7 @@ class ObjectDetector extends Component {
               </Card>
             </CardDeck>
           </Col>
-          <Col md={9} className="screen">
+          <Col md={8} className="screen">
             {showScreen? screen: null}
           </Col>
         </Row>

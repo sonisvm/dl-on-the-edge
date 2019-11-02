@@ -71,11 +71,7 @@ class Dropzone extends Component {
           type="file"
           onChange={this.onFilesAdded}
         />
-        <img
-          alt="upload"
-          className="Icon"
-          src="baseline-cloud_upload-24px.svg"
-        />
+        <i class="fa fa-cloud-upload fa-4x" aria-hidden="true"></i>
       </div>
     );
   }

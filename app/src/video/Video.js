@@ -29,7 +29,7 @@ class Video extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          fetch("http://localhost:8000/detect_objects", {
+          fetch("http://128.61.59.46:5000/detect_objects", {
                    method: 'POST',
                    headers: {
                        'Content-Type': 'application/json'
@@ -44,6 +44,7 @@ class Video extends Component {
                  return res.json();
                })
                .then(data => {
+                 console.log(data);
                  this.showDetections(data);
 
                  requestAnimationFrame(()=>{
@@ -73,6 +74,7 @@ class Video extends Component {
     ctx.font = font;
     ctx.textBaseline = "top";
 
+console.log(predictions);
     predictions.forEach(prediction => {
       const x = prediction.bbox[0];
       const y = prediction.bbox[1];

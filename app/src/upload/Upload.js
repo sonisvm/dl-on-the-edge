@@ -47,12 +47,8 @@ class Upload extends Component {
       return <ObjectDetector src={this.state.src} type={this.state.image? "image" : "video"}/>;
     } else {
       return (
-        <Container>
-            <Row className="title">
-              <Col>
-                <h3>Upload file</h3>
-              </Col>
-            </Row>
+        <Container className="uploadContainer">
+            <h2 className="title">Upload file</h2>
             <Row className="upload">
               <Col className="content">
                 <Dropzone
