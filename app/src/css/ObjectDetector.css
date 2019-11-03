@@ -8,8 +8,39 @@
 .optionCards .card-header {
   background-color: #046595;
   color: white;
+  font-size: 16px;
 }
 
-.optionCards .card{
+.topRow{
   margin-top: 20px;
+}
+
+.optionCards .card {
+  margin-bottom: 10px;
+}
+
+.optionCards .form-check-input {
+  margin-top: 0;
+}
+
+.optionCards .form-check-label {
+  padding-left: 5px;
+}
+
+.optionCards input {
+  width:20px;
+  height:20px;
+}
+
+.legend .box {
+  width: 15px;
+  height: 10px;
+  display: inline-block;
+}
+
+.legend .label {
+  display: inline-flex;
+  padding-left: 5px;
+  flex-direction: column;
+  justify-content: center;
 }

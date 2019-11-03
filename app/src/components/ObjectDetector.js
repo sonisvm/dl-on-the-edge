@@ -61,11 +61,11 @@ class ObjectDetector extends Component {
             <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
           </Button>
         </Row>
-        <Row>
-          <Col md={4}>
+        <Row className="topRow">
+          <Col md={2}>
             <CardDeck className="optionCards">
               <Card className="modelSelector">
-                <Card.Header>Select the model</Card.Header>
+                <Card.Header>Models</Card.Header>
                 <Card.Body>
                   <Form>
                     {modelOptions.map(option => {
@@ -85,7 +85,7 @@ class ObjectDetector extends Component {
                 </Card.Body>
               </Card>
               <Card className="options">
-                <Card.Header>Mode of Execution</Card.Header>
+                <Card.Header>Execution Mode</Card.Header>
                 <Card.Body>
                   <Form>
                       <Form.Check
@@ -109,8 +109,30 @@ class ObjectDetector extends Component {
               </Card>
             </CardDeck>
           </Col>
-          <Col md={8} className="screen">
+          <Col md={7} className="screen">
             {showScreen? screen: null}
+          </Col>
+          <Col md={1}></Col>
+          <Col md={2} className="legend">
+            {showScreen && this.state.execution_mode==="parallel"?
+                (
+                  Array.from(this.state.models).map(model => {
+
+                    let modelInfo = modelOptions.filter(d => d.id === model)[0]
+                    console.log(modelInfo);
+                    let color = modelInfo.color;
+                    let name = modelInfo.display_name;
+                    const styleObj = {
+                      border: "2px solid " + color,
+                      backgroundColor: color
+                    }
+                    return (<div>
+                      <div className="box" style={styleObj}></div>
+                      <div className="label" >{name}</div>
+                    </div>)
+                  })
+                )
+              : null}
           </Col>
         </Row>
       </Container>
