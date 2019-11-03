@@ -4,7 +4,7 @@ import '../css/Upload.css';
 import ObjectDetector from './ObjectDetector';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
 
 class Upload extends Component {
   constructor(props) {
@@ -41,22 +41,33 @@ class Upload extends Component {
 
   }
 
+  startOver = ()=>{
+    this.setState({
+      uploading: false,
+      uploaded: false,
+      src: ''
+    })
+  }
 
   render() {
     if (this.state.uploaded) {
-      return <ObjectDetector src={this.state.src} type={this.state.image? "image" : "video"}/>;
+      return <ObjectDetector src={this.state.src} type={this.state.image? "image" : "video"} back={this.startOver}/>;
     } else {
       return (
-        <Container className="uploadContainer">
+        <Container>
+          <Row>
+            <Button variant="link" onClick={this.props.back} className="backButton">
+              <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
+            </Button>
+          </Row>
+          <Row className="uploadContainer">
             <h2 className="title">Upload file</h2>
-            <Row className="upload">
-              <Col className="content">
                 <Dropzone
                   onFilesAdded={this.onFilesAdded}
                   disabled={this.state.uploading || this.state.uploaded}
                 />
-              </Col>
-            </Row>
+          </Row>
+
         </Container>
       );
     }

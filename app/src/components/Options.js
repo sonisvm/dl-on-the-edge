@@ -30,7 +30,7 @@ class Options extends Component {
     let option = this.state.option;
     if (option) {
       if (option === "upload") {
-        return <Upload/>;
+        return <Upload back={this.startOver}/>;
       } else {
         return <ObjectDetector type="webcam" back={this.startOver}/>;
       }

@@ -4,7 +4,6 @@ import React, {Component} from 'react';
 import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
 

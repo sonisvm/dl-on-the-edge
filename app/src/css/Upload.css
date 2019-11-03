@@ -19,7 +19,6 @@
 .title {
   text-align: center;
   color: #046595;
-  margin-top: 10vh;
 }
 
 .uploadContainer {
@@ -27,5 +26,4 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 70vh;
 }
