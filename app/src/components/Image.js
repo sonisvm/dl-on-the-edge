@@ -13,19 +13,22 @@ class Image extends Component {
   imageRef = React.createRef();
 
   componentDidUpdate(prevProps) {
+    console.log("In update");
     this.getPredictionsFromServer();
   }
 
   componentDidMount() {
-    this.imageRef.current = document.createElement('img');
-    this.imageRef.current.src = this.props.src;
-    const ctx = this.canvasRef.current.getContext("2d");
+    console.log("In mount");
 
-    ctx.drawImage(this.imageRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    let image = document.getElementById("image");
+    const ctx = this.canvasRef.current.getContext("2d");
+    ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+
     this.getPredictionsFromServer();
   }
 
   getPredictionsFromServer = () => {
+    console.log("In getPredictions");
     this.canvasRef.current.toBlob(blob=>{
       let reader = new FileReader();
       reader.onload = file => {
@@ -42,10 +45,12 @@ class Image extends Component {
 
 
   render() {
+    console.log("In render");
     return (
       <Row>
         <Col>
-          <canvas ref={this.canvasRef} width="720" height="500"/>
+          <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
+          <canvas ref={this.canvasRef} width="720" height="500" id="canvasRef"/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>
         </Col>
 

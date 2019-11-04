@@ -3,3 +3,7 @@ video, canvas, img {
   width: 80vh;
   height: 63vh;
 }
+
+#canvasRef {
+  visibility: hidden;
+}

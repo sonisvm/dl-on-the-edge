@@ -31,7 +31,7 @@ class ObjectDetector extends Component {
     } else {
       models.add(model);
     }
-    console.log(models);
+
 
     this.setState({
       models: models

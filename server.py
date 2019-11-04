@@ -13,7 +13,7 @@ def detect_objects():
 	if not request.json or not 'image' in request.json:
 		abort(400)
 
-	# print('request image:' + str(request.json['image']))
+	print('request image:' + str(request.json['image']))
 	# print('request mode:' + request.json['mode'])
 	# print('request models:' + str(request.json['models']))
 
