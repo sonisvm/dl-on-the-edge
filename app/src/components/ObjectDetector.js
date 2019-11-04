@@ -126,7 +126,7 @@ class ObjectDetector extends Component {
                       border: "2px solid " + color,
                       backgroundColor: color
                     }
-                    return (<div>
+                    return (<div key={name}>
                       <div className="box" style={styleObj}></div>
                       <div className="label" >{name}</div>
                     </div>)
