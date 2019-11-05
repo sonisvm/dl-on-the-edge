@@ -162,12 +162,13 @@ def base64tocv2(s):
 
 
 # Setup NCS2
-model_xml = "lrmodels/tiny-YoloV3/FP16/frozen_tiny_yolo_v3.xml"  # <--- MYRIAD
+model_xml = "lrmodels/tiny-YoloV3/FP32/frozen_tiny_yolo_v3.xml"  # <--- MYRIAD
 model_bin = os.path.splitext(model_xml)[0] + ".bin"
 
 time.sleep(1)
 
-plugin = IEPlugin(device="MYRIAD")
+plugin = IEPlugin(device="CPU")
+plugin.add_cpu_extension("../OpenVINO-YoloV3/lib/libcpu_extension.dylib")
 net = IENetwork(model=model_xml, weights=model_bin)
 input_blob = next(iter(net.inputs))
 exec_net = plugin.load(network=net)

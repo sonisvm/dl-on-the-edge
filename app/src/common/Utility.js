@@ -39,7 +39,7 @@ export function showDetections(data, canvas) {
       // Draw the text last to ensure it's on top.
       ctx.fillStyle = "#000000";
       ctx.fillText(prediction.class, x, y);
-      ctx.fillText(prediction.score.toFixed(2), textWidth+10, y);
+      ctx.fillText(prediction.score.toFixed(2), x+textWidth+10, y);
     });
   }
 
