@@ -4,7 +4,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import WebCam from './WebCam';
 import Video from './Video';
-import Image from './Image';
+import Photo from './Photo';
 import Card from 'react-bootstrap/Card';
 import CardDeck from 'react-bootstrap/CardDeck';
 import modelOptions from '../config/modelOptions';
@@ -49,7 +49,7 @@ class ObjectDetector extends Component {
       } else if (this.props.type === "video") {
         screen = <Video src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models}/>;
       } else {
-        screen = <Image src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models}/>
+        screen = <Photo src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models}/>
       }
     }
 
@@ -118,7 +118,6 @@ class ObjectDetector extends Component {
                   Array.from(this.state.models).map(model => {
 
                     let modelInfo = modelOptions.filter(d => d.id === model)[0]
-                    console.log(modelInfo);
                     let color = modelInfo.color;
                     let name = modelInfo.display_name;
                     const styleObj = {

@@ -29,17 +29,17 @@ export function showDetections(data, canvas) {
       ctx.strokeRect(x, y, width, height);
       // Draw the label background.
       ctx.fillStyle = color;
-      const textWidth = ctx.measureText(prediction.class).width;
+      let score = prediction.score.toFixed(2);
+      const textWidth = ctx.measureText(prediction.class+" "+score).width;
       const textHeight = parseInt(font, 10);
       // draw top left rectangle
-      ctx.fillRect(x, y, textWidth*2, textHeight);
+      ctx.fillRect(x, y, textWidth+5, textHeight+2);
       // draw bottom left rectangle
       //ctx.fillRect(x, y + height - textHeight, textWidth + 15, textHeight + 10);
 
       // Draw the text last to ensure it's on top.
       ctx.fillStyle = "#000000";
-      ctx.fillText(prediction.class, x, y);
-      ctx.fillText(prediction.score.toFixed(2), x+textWidth+10, y);
+      ctx.fillText(prediction.class+" "+score, x, y+1);
     });
   }
 

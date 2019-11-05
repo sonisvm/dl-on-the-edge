@@ -7,22 +7,27 @@ import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
 
-class Image extends Component {
+class Photo extends Component {
   canvasRef = React.createRef();
   bbCanvasRef = React.createRef();
-  imageRef = React.createRef();
+
 
   // componentDidUpdate(prevProps) {
   //   this.getPredictionsFromServer();
   // }
 
   componentDidMount() {
+    let image = new Image();
 
-    let image = document.getElementById("image");
+    image.src="";
+    image.addEventListener("load", ()=> {
 
-    const ctx = this.canvasRef.current.getContext("2d");
+      const ctx = this.canvasRef.current.getContext("2d");
 
-    ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    })
+    image.src = this.props.src;
+
 
   }
 
@@ -56,9 +61,8 @@ class Image extends Component {
           </div>
         </Row>
         <Row className="fullHeight frame">
-            <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
-            <canvas ref={this.canvasRef}  id="canvasRef"/>
-            <canvas ref={this.bbCanvasRef} />
+            <canvas ref={this.canvasRef} width="720px" height="500px"/>
+            <canvas ref={this.bbCanvasRef} width="720px" height="500px" />
         </Row>
       </div>
 
@@ -66,4 +70,4 @@ class Image extends Component {
   }
 }
 
-export default Image;
+export default Photo;
