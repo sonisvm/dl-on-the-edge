@@ -4,11 +4,14 @@ import modelOptions from '../config/modelOptions';
 export function showDetections(data, canvas) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  const font = "12px helvetica";
+  const font = "16px helvetica";
   ctx.font = font;
   ctx.textBaseline = "top";
 
   for (let [key, value] of Object.entries(data)) {
+    if (key === 'fps') {
+      continue;
+    }
     let color = "#2fff00"
     if (key !== "all") {
       color = modelOptions.filter(d => d.id === key)[0].color
@@ -39,4 +42,17 @@ export function showDetections(data, canvas) {
       ctx.fillText(prediction.score.toFixed(2), textWidth+10, y);
     });
   }
+
+  //let fps = data['fps'];
+  let fps = '2';
+  if (fps) {
+    ctx.fillStyle = "#2fff00";
+    ctx.lineWidth = 1;
+    const textWidth = ctx.measureText("fps: "+fps).width;
+    const textHeight = parseInt(font, 10);
+    ctx.fillRect(ctx.canvas.width*0.9, ctx.canvas.height*0.025, textWidth+10, textHeight+10);
+    ctx.fillStyle = "#000000";
+    ctx.fillText("fps: "+fps, ctx.canvas.width*0.9+5, ctx.canvas.height*0.025+5);
+  }
+
 }
