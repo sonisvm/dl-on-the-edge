@@ -4,7 +4,6 @@
 import React, {Component} from 'react';
 import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
@@ -84,17 +83,18 @@ class WebCam extends Component {
 
   render() {
     return (
-      <Row>
-        <Col>
+      <div className="fullHeight">
+        <Row>
           <div>
-            <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
-            <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
+            <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
+            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
           </div>
+        </Row>
+        <Row className="fullHeight frame">
           <canvas ref={this.canvasRef} width="720" height="500"/>
           <canvas ref={this.bbCanvasRef} width="720" height="500"/>
-        </Col>
-
-      </Row>
+        </Row>
+      </div>
     );
   }
 }

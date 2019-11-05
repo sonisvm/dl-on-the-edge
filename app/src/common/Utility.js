@@ -43,8 +43,7 @@ export function showDetections(data, canvas) {
     });
   }
 
-  //let fps = data['fps'];
-  let fps = '2';
+  let fps = data['fps'];
   if (fps) {
     ctx.fillStyle = "#2fff00";
     ctx.lineWidth = 1;

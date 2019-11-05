@@ -52,10 +52,10 @@ class Image extends Component {
       <div className="fullHeight">
         <Row>
           <div>
-            <Button variant="outline-primary" onClick={this.detectObjects}>Detect Objects</Button>
+            <Button className="controlBtn" onClick={this.detectObjects}>Detect Objects</Button>
           </div>
         </Row>
-        <Row className="fullHeight">
+        <Row className="fullHeight frame">
             <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
             <canvas ref={this.canvasRef}  id="canvasRef"/>
             <canvas ref={this.bbCanvasRef} />

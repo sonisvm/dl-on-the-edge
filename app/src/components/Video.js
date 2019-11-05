@@ -80,11 +80,11 @@ class Video extends Component {
       <div className="fullHeight">
         <Row>
           <div>
-            <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
-            <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
+            <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
+            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
           </div>
         </Row>
-        <Row className="fullHeight">
+        <Row className="fullHeight frame">
           <canvas ref={this.canvasRef} width="720px" height="500px"/>
           <canvas ref={this.bbCanvasRef} width="720px" height="500px"/>
         </Row>
