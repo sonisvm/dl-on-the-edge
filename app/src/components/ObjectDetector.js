@@ -18,8 +18,8 @@ class ObjectDetector extends Component {
     super(props);
 
     this.state = {
-      models: new Set(),
-      execution_mode: ''
+      models: new Set(['coco_tiny_yolov3_320']),
+      execution_mode: 'parallel'
     }
   }
 
