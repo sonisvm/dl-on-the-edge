@@ -1,9 +1,14 @@
+
 video, canvas, img {
-  position: fixed;
-  width: 80vh;
-  height: 63vh;
+  position: absolute;
+  object-fit: cover;
+
 }
 
 #canvasRef {
   visibility: hidden;
+}
+
+.fullHeight {
+  height: 100%;
 }

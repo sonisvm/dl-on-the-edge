@@ -3,7 +3,6 @@
 import React, {Component} from 'react';
 import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
@@ -25,6 +24,7 @@ class Video extends Component {
     if(!this.paused) {
       this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
+
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.drawImage(this.videoRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -54,6 +54,7 @@ class Video extends Component {
     this.videoRef.current.src = this.props.src;
     this.videoRef.current.onplay = this.drawFrame;
     this.videoRef.current.muted = true;
+
   }
 
   startVideo = () => {
@@ -68,17 +69,21 @@ class Video extends Component {
 
   render() {
     return (
-      <Row>
-        <Col>
+      <div className="fullHeight">
+        <Row>
           <div>
             <Button variant="outline-primary" onClick={this.startVideo}>Start</Button>
             <Button variant="outline-primary" onClick={this.stopVideo}>Stop</Button>
           </div>
-          <canvas ref={this.canvasRef} width="720" height="500"/>
-          <canvas ref={this.bbCanvasRef} width="720" height="500"/>
-        </Col>
+        </Row>
+        <Row className="fullHeight">
+          <canvas ref={this.canvasRef} width="720px" height="500px"/>
+          <canvas ref={this.bbCanvasRef} width="720px" height="500px"/>
+        </Row>
+      </div>
 
-      </Row>
+
+
     );
   }
 }

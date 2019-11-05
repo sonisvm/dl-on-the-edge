@@ -3,7 +3,6 @@
 import React, {Component} from 'react';
 import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
 
@@ -13,15 +12,15 @@ class Image extends Component {
   imageRef = React.createRef();
 
   componentDidUpdate(prevProps) {
-    console.log("In update");
     this.getPredictionsFromServer();
   }
 
   componentDidMount() {
-    console.log("In mount");
 
     let image = document.getElementById("image");
+
     const ctx = this.canvasRef.current.getContext("2d");
+
     ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
     this.getPredictionsFromServer();
@@ -45,15 +44,11 @@ class Image extends Component {
 
 
   render() {
-    console.log("In render");
     return (
-      <Row>
-        <Col>
+      <Row className="fullHeight">
           <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
-          <canvas ref={this.canvasRef} width="720" height="500" id="canvasRef"/>
-          <canvas ref={this.bbCanvasRef} width="720" height="500"/>
-        </Col>
-
+          <canvas ref={this.canvasRef}  id="canvasRef"/>
+          <canvas ref={this.bbCanvasRef} />
       </Row>
     );
   }

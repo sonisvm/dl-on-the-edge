@@ -4,7 +4,7 @@ import modelOptions from '../config/modelOptions';
 export function showDetections(data, canvas) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  const font = "24px helvetica";
+  const font = "12px helvetica";
   ctx.font = font;
   ctx.textBaseline = "top";
 
@@ -13,7 +13,7 @@ export function showDetections(data, canvas) {
     if (key !== "all") {
       color = modelOptions.filter(d => d.id === key)[0].color
     }
-    
+
     let predictions = value;
     predictions.forEach(prediction => {
       const x = prediction.bbox[0];
@@ -29,14 +29,14 @@ export function showDetections(data, canvas) {
       const textWidth = ctx.measureText(prediction.class).width;
       const textHeight = parseInt(font, 10);
       // draw top left rectangle
-      ctx.fillRect(x, y, textWidth + 10, textHeight + 10);
+      ctx.fillRect(x, y, textWidth*2, textHeight);
       // draw bottom left rectangle
-      ctx.fillRect(x, y + height - textHeight, textWidth + 15, textHeight + 10);
+      //ctx.fillRect(x, y + height - textHeight, textWidth + 15, textHeight + 10);
 
       // Draw the text last to ensure it's on top.
       ctx.fillStyle = "#000000";
       ctx.fillText(prediction.class, x, y);
-      ctx.fillText(prediction.score.toFixed(2), x, y + height - textHeight);
+      ctx.fillText(prediction.score.toFixed(2), textWidth+10, y);
     });
   }
 }

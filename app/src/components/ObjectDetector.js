@@ -109,10 +109,9 @@ class ObjectDetector extends Component {
               </Card>
             </CardDeck>
           </Col>
-          <Col md={7} className="screen">
+          <Col md={8} className="screen">
             {showScreen? screen: null}
           </Col>
-          <Col md={1}></Col>
           <Col md={2} className="legend">
             {showScreen && this.state.execution_mode==="parallel"?
                 (
