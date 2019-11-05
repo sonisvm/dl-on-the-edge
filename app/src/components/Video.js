@@ -55,6 +55,14 @@ class Video extends Component {
     this.videoRef.current.onplay = this.drawFrame;
     this.videoRef.current.muted = true;
 
+    //showing first frame of video
+    this.videoRef.current.onloadeddata = () => {
+      const ctx = this.canvasRef.current.getContext("2d");
+
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(this.videoRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
   }
 
   startVideo = () => {

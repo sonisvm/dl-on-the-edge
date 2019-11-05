@@ -3,6 +3,7 @@
 import React, {Component} from 'react';
 import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
+import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
 import {showDetections} from '../common/Utility';
 
@@ -11,9 +12,9 @@ class Image extends Component {
   bbCanvasRef = React.createRef();
   imageRef = React.createRef();
 
-  componentDidUpdate(prevProps) {
-    this.getPredictionsFromServer();
-  }
+  // componentDidUpdate(prevProps) {
+  //   this.getPredictionsFromServer();
+  // }
 
   componentDidMount() {
 
@@ -23,11 +24,14 @@ class Image extends Component {
 
     ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
+  }
+
+  detectObjects = ()=>{
     this.getPredictionsFromServer();
   }
 
   getPredictionsFromServer = () => {
-    console.log("In getPredictions");
+
     this.canvasRef.current.toBlob(blob=>{
       let reader = new FileReader();
       reader.onload = file => {
@@ -45,11 +49,19 @@ class Image extends Component {
 
   render() {
     return (
-      <Row className="fullHeight">
-          <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
-          <canvas ref={this.canvasRef}  id="canvasRef"/>
-          <canvas ref={this.bbCanvasRef} />
-      </Row>
+      <div className="fullHeight">
+        <Row>
+          <div>
+            <Button variant="outline-primary" onClick={this.detectObjects}>Detect Objects</Button>
+          </div>
+        </Row>
+        <Row className="fullHeight">
+            <img src={this.props.src} width="720" height="500" id="image" alt="uploading.."/>
+            <canvas ref={this.canvasRef}  id="canvasRef"/>
+            <canvas ref={this.bbCanvasRef} />
+        </Row>
+      </div>
+
     );
   }
 }
