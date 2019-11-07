@@ -1,7 +1,7 @@
 
 video, canvas, img {
   position: absolute;
-  object-fit: contain;
+  object-fit: cover;
 
 }
 

@@ -6,7 +6,7 @@ import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
-import {showDetections} from '../common/Utility';
+import {showDetections, drawImageProp} from '../common/Utility';
 
 class WebCam extends Component {
   videoRef = React.createRef();
@@ -24,7 +24,7 @@ class WebCam extends Component {
       this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.drawImage(this.videoRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawImageProp(ctx, this.videoRef.current);
 
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();

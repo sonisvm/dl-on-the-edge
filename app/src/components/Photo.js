@@ -5,16 +5,11 @@ import "../css/Video.css";
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import {getPredictions} from '../server/Server';
-import {showDetections} from '../common/Utility';
+import {showDetections, drawImageProp} from '../common/Utility';
 
 class Photo extends Component {
   canvasRef = React.createRef();
   bbCanvasRef = React.createRef();
-
-
-  // componentDidUpdate(prevProps) {
-  //   this.getPredictionsFromServer();
-  // }
 
   componentDidMount() {
     let image = new Image();
@@ -24,7 +19,7 @@ class Photo extends Component {
 
       const ctx = this.canvasRef.current.getContext("2d");
 
-      ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawImageProp(ctx, image);
     })
     image.src = this.props.src;
 
@@ -62,7 +57,7 @@ class Photo extends Component {
         </Row>
         <Row className="fullHeight frame">
             <canvas ref={this.canvasRef} width="720px" height="500px"/>
-            <canvas ref={this.bbCanvasRef} width="720px" height="500px" />
+            <canvas ref={this.bbCanvasRef}  width="720px" height="500px" />
         </Row>
       </div>
 
