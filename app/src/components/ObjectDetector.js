@@ -19,6 +19,9 @@ class ObjectDetector extends Component {
 
     this.state = {
       models: new Set(['coco_tiny_yolov3_320']),
+      config:{
+        coco_tiny_yolov3_320:{conf: '0.20', iou:'0.45'}
+      },
       execution_mode: 'parallel'
     }
   }
@@ -26,18 +29,39 @@ class ObjectDetector extends Component {
   addModel = event => {
     const model = event.currentTarget.value;
     let models = this.state.models;
+    let config = this.state.config;
     if (models.has(model)) {
       models.delete(model);
+      delete config[model]
     } else {
       models.add(model);
+      config[model] = {conf: '0.20', iou:'0.45'};
     }
 
 
     this.setState({
-      models: models
+      models: models,
+      config: config
     });
   }
 
+  updateConf = event => {
+    let model = event.currentTarget.name;
+    let config = this.state.config;
+    config[model].conf = event.currentTarget.value;
+    this.setState({
+      config: config
+    });
+  }
+
+  updateIOU = event => {
+    let model = event.currentTarget.name;
+    let config = this.state.config;
+    config[model].iou = event.currentTarget.value;
+    this.setState({
+      config: config
+    });
+  }
 
   render() {
     let showScreen = this.state.execution_mode && this.state.models.size!==0;
@@ -45,40 +69,59 @@ class ObjectDetector extends Component {
     let screen = null;
     if (showScreen) {
       if (this.props.type === "webcam") {
-        screen = <WebCam execution_mode={this.state.execution_mode} models={this.state.models}/>;
+        screen = <WebCam execution_mode={this.state.execution_mode} models={this.state.models} config={this.state.config}/>;
       } else if (this.props.type === "video") {
-        screen = <Video src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models}/>;
+        screen = <Video src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models} config={this.state.config}/>;
       } else {
-        screen = <Photo src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models}/>
+        screen = <Photo src={this.props.src} execution_mode={this.state.execution_mode} models={this.state.models} config={this.state.config}/>
       }
     }
 
 
     return (
-      <Container>
+      <Container fluid={true}>
         <Row>
           <Button variant="link" onClick={this.props.back} className="backButton">
             <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
           </Button>
         </Row>
         <Row className="topRow">
-          <Col md={2}>
+          <Col md={3}>
             <CardDeck className="optionCards">
               <Card className="modelSelector">
                 <Card.Header>Models</Card.Header>
                 <Card.Body>
                   <Form>
                     {modelOptions.map(option => {
+                      let extraOptions;
+                      if (this.state.models.has(option.id)) {
+                        extraOptions = (
+                          <Row>
+                            <Col>
+                              <Form.Label >Conf:</Form.Label>
+                              <Form.Control  as="input" type="text" name={option.id} value={this.state.config[option.id].conf} onChange={this.updateConf}/>
+                            </Col>
+                            <Col>
+                              <Form.Label>IOU:</Form.Label>
+                              <Form.Control  as="input" type="text" name={option.id} value={this.state.config[option.id].iou} onChange={this.updateIOU}/>
+                            </Col>
+                          </Row>
+                        )
+                      }
                       return (
-                          <Form.Check
-                            key={option.id}
-                            type="checkbox"
-                            label={option.display_name}
-                            id={option.id}
-                            value = {option.id}
-                            checked = {this.state.models.has(option.id)}
-                            onChange = {this.addModel}
-                          />
+                        <div id="modelOption" key={option.id}>
+                          <Row>
+                            <Form.Check
+                              type="checkbox"
+                              label={option.display_name}
+                              id={option.id}
+                              value = {option.id}
+                              checked = {this.state.models.has(option.id)}
+                              onChange = {this.addModel}
+                            />
+                          </Row>
+                          {extraOptions}
+                        </div>
                       );
                     })}
                   </Form>
@@ -109,7 +152,7 @@ class ObjectDetector extends Component {
               </Card>
             </CardDeck>
           </Col>
-          <Col md={8} className="screen">
+          <Col md={7} className="screen">
             {showScreen? screen: null}
           </Col>
           <Col md={2} className="legend">

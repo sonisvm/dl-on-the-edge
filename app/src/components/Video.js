@@ -31,7 +31,7 @@ class Video extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          getPredictions(file.target.result, this.props.execution_mode, this.props.models)
+          getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
                .then(data => {
 
                  showDetections(data, this.bbCanvasRef.current);

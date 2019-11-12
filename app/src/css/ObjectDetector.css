@@ -27,7 +27,7 @@
   padding-left: 5px;
 }
 
-.optionCards input {
+.optionCards .form-check-input {
   width:20px;
   height:20px;
 }
@@ -43,4 +43,19 @@
   padding-left: 5px;
   flex-direction: column;
   justify-content: center;
+}
+
+.modelSelector .form-control {
+  display: inline-block;
+  width: 60%;
+  font-size: 16px;
+  height: calc(2em);
+}
+
+#modelOption {
+  margin-bottom: 5px;
+}
+
+.modelSelector .form-label {
+  margin-right: 5px;
 }
