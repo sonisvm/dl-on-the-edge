@@ -6,6 +6,8 @@ import math
 from flask import Flask, jsonify, abort, make_response, request
 from flask_cors import CORS
 import base64
+import multiprocessing as mp
+
 
 try:
     from armv7l.openvino.inference_engine import IENetwork, IEPlugin
@@ -25,7 +27,7 @@ anchors = [10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319]
 framebuffers = []
 models = {}
 frameId = 0
-output = None
+model_results = None
 
 LABELS = ("person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light",
           "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -42,6 +44,7 @@ label_background_color = (125, 175, 75)
 box_color = (255, 128, 0)
 box_thickness = 1
 processes = []
+
 
 
 def EntryIndex(side, lcoords, lclasses, location, entry):
@@ -193,15 +196,15 @@ app = Flask(__name__)
 CORS(app)
 
 
-def init(outstream, MODELS_IN_USE, frameBuffers):
+def init(apiresults, MODELS_IN_USE, frameBuffers):
     global models
     global framebuffers
-    global output
+    global model_results
 
     for mi, model in enumerate(MODELS_IN_USE):
         models[model[0]] = mi
     framebuffers.extend(frameBuffers)
-    output = outstream
+    model_results = apiresults
 
 @app.route('/detect_objects', methods=['POST'])
 def detect_objects():
@@ -232,17 +235,19 @@ def detect_objects():
 @app.route('/detect_objects_response', methods=['GET'])
 def detect_objects_response():
     global models
+    model_names = request.args.get('models', "")
+    model_names = model_names.split(",") if model_names else []
 
     response = {}
-    results = output.get()
-    for model, index in models.items():
+    for model_name in model_names:
+        model_index = models[model_name]
         objects_detected = []
-        for obj in results[index]:
+        for obj in model_results[model_index].get()[1]:
             if obj.confidence < 0.2:
                 continue
             objects_detected.append({'bbox': [obj.xmin, obj.ymin, obj.xmax - obj.xmin, obj.ymax - obj.ymin],
                                      'class': LABELS[obj.class_id], 'score': float(obj.confidence)})
-        response[model] = objects_detected
+        response[model_name] = objects_detected
 
     return jsonify(response), 201
 
@@ -250,8 +255,35 @@ def detect_objects_response():
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    global framebuffers
+    global model_results
+    shutdown_hook = request.environ.get('werkzeug.server.shutdown')
+    for q in framebuffers + model_results:
+        while not q.empty():
+            q.get()
+
+    if shutdown_hook is not None:
+        shutdown_hook()
+    return "", 200
 
 if __name__ == '__main__':
+    MODELS_IN_USE = (
+        ("coco_tiny_yolov3_320", 320),
+        ("coco_tiny_yolov3_352", 352),
+        ("coco_tiny_yolov3_384", 384),
+        ("coco_tiny_yolov3_416", 416),
+        ("coco_tiny_yolov3_448", 448),
+        ("coco_tiny_yolov3_480", 480),
+        ("coco_tiny_yolov3_512", 512),
+        ("coco_tiny_yolov3_544", 544),
+        ("coco_tiny_yolov3_576", 576),
+        ("coco_tiny_yolov3_608", 608),
+    )
+    in_queues = [mp.Queue() for _ in MODELS_IN_USE]
+    out_queues = [mp.Queue() for _ in MODELS_IN_USE]
+    init(in_queues, MODELS_IN_USE, out_queues)
     app.run(debug=False, host="0.0.0.0")
 
     del net

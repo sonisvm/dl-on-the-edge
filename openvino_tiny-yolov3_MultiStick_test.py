@@ -35,7 +35,7 @@ LABELS = ("person", "bicycle", "car", "motorbike", "aeroplane",
           "vase", "scissors", "teddy bear", "hair drier", "toothbrush")
 MODELS_IN_USE = (
     ("coco_tiny_yolov3_320", 320),
-    # ("coco_tiny_yolov3_352", 352),
+    ("coco_tiny_yolov3_352", 352),
     # ("coco_tiny_yolov3_384", 384),
     # ("coco_tiny_yolov3_416", 416),
     # ("coco_tiny_yolov3_448", 448),
@@ -151,13 +151,12 @@ def ParseYOLOV3Output(blob, resized_im_h, resized_im_w, original_im_h, original_
                 objects.append(obj)
     return objects
 
-def server(frameBuffers, output):
+def server(frameBuffers, api_results):
     from server import app, init
 
-    init(output, MODELS_IN_USE, frameBuffers)
-
-
-    app.run(debug=False, host="0.0.0.0")
+    init(api_results, MODELS_IN_USE, frameBuffers)
+    while True:
+        app.run(debug=False, host="0.0.0.0")
 
 def camThread(LABELS, results, frameBuffers, camera_width, camera_height, vidfps):
     global fps
@@ -532,14 +531,14 @@ if __name__ == '__main__':
         # sleep(number_of_ncs * 7)
 
         # Start streaming
-        p = mp.Process(target=server, args=(frameBuffers, output ), daemon=True)
+        p = mp.Process(target=server, args=(frameBuffers, api_results), daemon=True)
         p.start()
         processes.append(p)
 
-        # Start combining outputs
-        p = mp.Process(target=aggregateThread, args=(api_results, output), daemon=True)
-        p.start()
-        processes.append(p)
+        # # Start combining outputs
+        # p = mp.Process(target=aggregateThread, args=(api_results, output), daemon=True)
+        # p.start()
+        # processes.append(p)
 
         while True:
             for p in processes:
