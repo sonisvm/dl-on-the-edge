@@ -8,17 +8,23 @@ function *pollForResult(){
 
 const generator = pollForResult();
 
-function runPolling(resolve, reject) {
-  console.log("in polling");
+// function runPolling(resolve, reject) {
+//   console.log("in polling");
+//
+//
+// }
 
-  let p = generator.next();
-  p.value.then(res => {
-    if (!res || res.length===0) {
-      return runPolling(resolve, reject);
-    } else {
-      resolve(res);
-    }
-  });
+var wrapper = function(models) {
+  return new Promise(function(resolve, reject) {
+    let p = generator.next(models);
+    p.value.then(res => {
+      if (!res || res.length===0) {
+        return wrapper(models);
+      } else {
+        resolve(res);
+      }
+    });
+  })
 }
 
 export function getPredictions(image, mode, models, config) {
@@ -45,7 +51,7 @@ export function getPredictions(image, mode, models, config) {
        .then(res => {
          console.log("in response");
          if (res.status === 201 || res.status===200) {
-           return new Promise(runPolling);
+           return wrapper(models);
          }
 
        })
