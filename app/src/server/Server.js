@@ -16,12 +16,13 @@ generator.next();
 //
 // }
 
-var wrapper = function(models) {
+var wrapper = function(models, count) {
   return new Promise(function(resolve, reject) {
+    console.log("polling for ", count);
     let p = generator.next(models);
     p.value.then(res => {
       if (!res || res.length===0) {
-        setTimeout(()=> {return wrapper(models)}, 1000);
+        setTimeout(()=> {return wrapper(models, count)}, 1000);
       } else {
         resolve(res);
       }
@@ -29,7 +30,7 @@ var wrapper = function(models) {
   })
 }
 
-export function getPredictions(image, mode, models, config) {
+export function getPredictions(image, mode, models, config, count) {
   let modelConfigs = [];
   models.forEach(model => {
     modelConfigs.push({
@@ -51,9 +52,8 @@ export function getPredictions(image, mode, models, config) {
            })
        })
        .then(res => {
-         console.log("in response");
          if (res.status === 201 || res.status===200) {
-           return wrapper(models);
+           return wrapper(models, count);
          }
 
        })

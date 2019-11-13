@@ -17,12 +17,15 @@ class Video extends Component {
     super(props);
 
     this.paused = false;
+    this.counter = 0;
 
   }
 
   drawFrame = () => {
+    //console.log("in draw frame");
     if(!this.paused) {
       this.videoRef.current.pause();
+      this.counter++;
       const ctx = this.canvasRef.current.getContext("2d");
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -31,7 +34,7 @@ class Video extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
+          getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config, this.counter)
                .then(data => {
 
                  showDetections(data, this.bbCanvasRef.current);
@@ -41,14 +44,16 @@ class Video extends Component {
 
         reader.readAsDataURL(blob);
       }, 'image/jpeg');
+      requestAnimationFrame(()=>{
+        if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
+          // setTimeout(() => {
+          //   this.videoRef.current.play();
+          // }, 33)
+           this.videoRef.current.play();
+        };
+      });
     }
-    requestAnimationFrame(()=>{
-      if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
-        setTimeout(() => {
-          this.videoRef.current.play();
-        }, 33)
-      };
-    });
+
   }
 
   componentDidMount() {
@@ -69,14 +74,17 @@ class Video extends Component {
   }
 
   startVideo = () => {
-    this.videoRef.current.play();
+    console.log("start again");
     this.paused = false;
+    this.videoRef.current.play();
+
   }
 
   stopVideo = () => {
     console.log("in stopVideo");
-    this.videoRef.current.pause();
     this.paused = true;
+    this.videoRef.current.pause();
+
   }
 
   render() {
