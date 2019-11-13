@@ -176,6 +176,13 @@ print('Model Loaded')
 app = Flask(__name__)
 CORS(app)
 
+@app.route('/detect_objects_response', methods=['GET'])
+def detect_objects_response():
+    response = {}
+    responseEnsemble = [{'bbox': [1, 0, 200, 200], 'class': 'person', 'score': 0.838}]
+    response['all'] = responseEnsemble
+    return jsonify(response), 200
+
 @app.route('/detect_objects', methods=['POST'])
 def detect_objects():
     if not request.json or not 'image' in request.json:
@@ -184,19 +191,19 @@ def detect_objects():
     # print('request mode:' + request.json['mode'])
     # print('request models:' + str(request.json['models']))
 
-    image = base64tocv2(request.json['image'])
+    # image = base64tocv2(request.json['image'])
     response = {}
-    if request.json['mode'] == 'parallel':
-        responsePerModel = []
-        for model in request.json['models']:
-            objects, fps = detect(image)
-            responsePerModel = objects
-            response[model] = responsePerModel
-    elif request.json['mode'] == 'ensemble':
-        # responseEnsemble is the prediction results(bounding boxes) of the ensemble model
-        responseEnsemble = []
-        responseEnsemble = [{'bbox': [1, 0, 200, 200], 'class': 'person', 'score': 0.838}]
-        response['all'] = responseEnsemble
+    # if request.json['mode'] == 'parallel':
+    #     responsePerModel = []
+    #     for modelObj in request.json['models']:
+    #         objects, fps = detect(image)
+    #         responsePerModel = objects
+    #         response[modelObj['model']] = responsePerModel
+    # elif request.json['mode'] == 'ensemble':
+    #     # responseEnsemble is the prediction results(bounding boxes) of the ensemble model
+    #     responseEnsemble = []
+    #     responseEnsemble = [{'bbox': [1, 0, 200, 200], 'class': 'person', 'score': 0.838}]
+    #     response['all'] = responseEnsemble
 
     return jsonify(response), 201
 
