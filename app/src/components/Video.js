@@ -44,8 +44,10 @@ class Video extends Component {
     }
     requestAnimationFrame(()=>{
       if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
-        this.videoRef.current.play();
-      }
+        setTimeout(() => {
+          this.videoRef.current.play();
+        }, 33)
+      };
     });
   }
 

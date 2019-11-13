@@ -407,8 +407,8 @@ def inferencer(results, frameBuffers, number_of_ncs, camera_width, camera_height
                         NcsWorker(
                             devid, frameBuffers[mi], results, camera_width,
                             camera_height, number_of_ncs, vidfps, api_results[mi],
-                            # model_name=model_name, input_size=input_size,
-                            model_name="frozen_tiny_yolo_v3", input_size=416,
+                            model_name=model_name, input_size=input_size,
+                            # model_name="frozen_tiny_yolo_v3", input_size=416,
                             plugin=plugin
                         ),
                     ))

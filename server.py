@@ -235,7 +235,6 @@ def detect_objects_response():
 
     response = {}
     results = output.get()
-    print("DEBUG", results)
     for model, index in models.items():
         objects_detected = []
         for obj in results[index]:
