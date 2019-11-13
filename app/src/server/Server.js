@@ -16,13 +16,12 @@ generator.next();
 //
 // }
 
-var wrapper = function(models, count) {
+var wrapper = function(models) {
   return new Promise(function(resolve, reject) {
-    console.log("polling for ", count);
     let p = generator.next(models);
     p.value.then(res => {
       if (!res || res.length===0) {
-        setTimeout(()=> {return wrapper(models, count)}, 1000);
+        setTimeout(()=> {return wrapper(models)}, 1000);
       } else {
         resolve(res);
       }
@@ -30,7 +29,7 @@ var wrapper = function(models, count) {
   })
 }
 
-export function getPredictions(image, mode, models, config, count) {
+export function getPredictions(image, mode, models, config) {
   let modelConfigs = [];
   models.forEach(model => {
     modelConfigs.push({
@@ -53,7 +52,7 @@ export function getPredictions(image, mode, models, config, count) {
        })
        .then(res => {
          if (res.status === 201 || res.status===200) {
-           return wrapper(models, count);
+           return wrapper(models);
          }
 
        })

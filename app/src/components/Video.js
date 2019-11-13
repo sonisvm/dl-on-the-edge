@@ -17,7 +17,6 @@ class Video extends Component {
     super(props);
 
     this.paused = false;
-    this.counter = 0;
 
   }
 
@@ -25,7 +24,6 @@ class Video extends Component {
     //console.log("in draw frame");
     if(!this.paused) {
       this.videoRef.current.pause();
-      this.counter++;
       const ctx = this.canvasRef.current.getContext("2d");
 
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -34,7 +32,7 @@ class Video extends Component {
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
-          getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config, this.counter)
+          getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
                .then(data => {
 
                  showDetections(data, this.bbCanvasRef.current);
@@ -45,13 +43,12 @@ class Video extends Component {
         reader.readAsDataURL(blob);
       }, 'image/jpeg');
       requestAnimationFrame(()=>{
-        if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
-          // setTimeout(() => {
-          //   this.videoRef.current.play();
-          // }, 33)
+       if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
+         setTimeout(() => {
            this.videoRef.current.play();
-        };
-      });
+         }, 33)
+       };
+     });
     }
 
   }
@@ -93,7 +90,7 @@ class Video extends Component {
         <Row>
           <div>
             <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
-            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
+
           </div>
         </Row>
         <Row className="fullHeight frame">

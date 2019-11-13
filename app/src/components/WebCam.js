@@ -78,8 +78,9 @@ class WebCam extends Component {
   }
 
   stopVideo = () => {
-    window.stream.getTracks().forEach(track => track.stop())
     this.paused = true;
+    window.stream.getTracks().forEach(track => track.stop())
+
   }
 
   render() {
@@ -88,7 +89,7 @@ class WebCam extends Component {
         <Row>
           <div>
             <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
-            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
+            
           </div>
         </Row>
         <Row className="fullHeight frame">
