@@ -36,17 +36,17 @@ class Video extends Component {
 
                  showDetections(data, this.bbCanvasRef.current);
 
-                 requestAnimationFrame(()=>{
-                   if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
-                     this.videoRef.current.play();
-                   }
-                 });
                });
         }
 
         reader.readAsDataURL(blob);
       }, 'image/jpeg');
     }
+    requestAnimationFrame(()=>{
+      if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
+        this.videoRef.current.play();
+      }
+    });
   }
 
   componentDidMount() {
