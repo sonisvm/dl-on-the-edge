@@ -212,9 +212,10 @@ def detect_objects():
     # print('request mode:' + request.json['mode'])
     # print('request models:' + str(request.json['models']))
 
-    # image = base64tocv2(request.json['image'])
-    response = {}
     frameId += 1
+    image = base64tocv2(request.json['image'])
+    response = {}
+
     for model in request.json['models']:
         conf, iou, model_name = model['conf'], model['iou'], model['model']
         detect(image, model_name, frameId, iou, conf, request.json['mode'])

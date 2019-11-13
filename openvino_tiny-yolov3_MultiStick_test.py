@@ -395,7 +395,7 @@ def inferencer(results, frameBuffers, number_of_ncs, camera_width, camera_height
     sleep_time = 2
     for devid in range(number_of_ncs):
         print("Plugin the device now and press")
-        sleep(devid * 5)
+        # sleep(devid * 5)
         for mi, model in enumerate(MODELS_IN_USE):
             while True:
                 try:
@@ -407,7 +407,8 @@ def inferencer(results, frameBuffers, number_of_ncs, camera_width, camera_height
                         NcsWorker(
                             devid, frameBuffers[mi], results, camera_width,
                             camera_height, number_of_ncs, vidfps, api_results[mi],
-                            model_name=model_name, input_size=input_size,
+                            # model_name=model_name, input_size=input_size,
+                            model_name="frozen_tiny_yolo_v3", input_size=416,
                             plugin=plugin
                         ),
                     ))
@@ -524,6 +525,10 @@ if __name__ == '__main__':
         p.start()
         processes.append(p)
 
+        # p = mp.Process(target=camThread, args=(LABELS, results, frameBuffers, camera_width, camera_height, vidfps),
+        #                daemon=True)
+        # p.start()
+        # processes.append(p)
         # sleep(number_of_ncs * 7)
 
         # Start streaming
