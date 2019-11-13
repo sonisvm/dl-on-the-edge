@@ -56,6 +56,7 @@ class Video extends Component {
     this.videoRef.current.src = this.props.src;
     this.videoRef.current.onplay = this.drawFrame;
     this.videoRef.current.muted = true;
+    this.videoRef.current.loop = true;
 
     //showing first frame of video
     this.videoRef.current.onloadeddata = () => {
@@ -73,6 +74,7 @@ class Video extends Component {
   }
 
   stopVideo = () => {
+    console.log("in stopVideo");
     this.videoRef.current.pause();
     this.paused = true;
   }

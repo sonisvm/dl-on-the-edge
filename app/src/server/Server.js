@@ -1,12 +1,14 @@
 
 function *pollForResult(){
+  var models = yield [];
   while (true) {
-    yield fetch('http://localhost:5000/detect_objects_response', {method:'get'})
+    yield fetch('http://localhost:5000/detect_objects_response?models='+Array.from(models).toString(), {method:'get'})
           .then(res => {return res.json()});
   }
 }
 
 const generator = pollForResult();
+generator.next();
 
 // function runPolling(resolve, reject) {
 //   console.log("in polling");
@@ -19,7 +21,7 @@ var wrapper = function(models) {
     let p = generator.next(models);
     p.value.then(res => {
       if (!res || res.length===0) {
-        return wrapper(models);
+        setTimeout(()=> {return wrapper(models)}, 1000);
       } else {
         resolve(res);
       }
