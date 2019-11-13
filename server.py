@@ -22,6 +22,10 @@ classes = 80
 coords = 4
 num = 3
 anchors = [10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319]
+framebuffers = []
+models = {}
+frameId = 0
+output = None
 
 LABELS = ("person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light",
           "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -118,7 +122,13 @@ def ParseYOLOV3Output(blob, resized_im_h, resized_im_w, original_im_h, original_
     return objects
 
 
-def detect(image):
+def detect(image, model, frameid, conf=0.2, iou=0.45, mode="parallel"):
+
+    global exec_net_index
+    global models
+    global output
+
+    model_index = models[model]
     t1 = time.time()
     camera_width = image.shape[1]
     camera_height = image.shape[0]
@@ -131,7 +141,11 @@ def detect(image):
     prepimg = canvas
     prepimg = prepimg[np.newaxis, :, :, :]  # Batch size axis add
     prepimg = prepimg.transpose((0, 3, 1, 2))  # NHWC to NCHW
-    outputs = exec_net.infer(inputs={input_blob: prepimg})
+    # print(exec_net_index)
+    # outputs = exec_net[exec_net_index].infer(inputs={input_blob: prepimg})
+    # exec_net_index = (exec_net_index + 1) % 2
+    framebuffers[model_index].put((frameid, image))
+    return
 
     objects = []
     for output in outputs.values():
@@ -168,23 +182,30 @@ model_bin = os.path.splitext(model_xml)[0] + ".bin"
 time.sleep(1)
 
 plugin = IEPlugin(device="CPU")
-plugin.add_cpu_extension("../OpenVINO-YoloV3/lib/libcpu_extension.dylib")
-net = IENetwork(model=model_xml, weights=model_bin)
-input_blob = next(iter(net.inputs))
-exec_net = plugin.load(network=net)
-print('Model Loaded')
+plugin.add_cpu_extension("../OpenVINO-YoloV3/lib/libcpu_extension.so")
+exec_net = []
+for _ in range(2):
+    net = IENetwork(model=model_xml, weights=model_bin)
+    input_blob = next(iter(net.inputs))
+    exec_net += [plugin.load(network=net)]
+exec_net_index = 0
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/detect_objects_response', methods=['GET'])
-def detect_objects_response():
-    response = {}
-    responseEnsemble = [{'bbox': [1, 0, 200, 200], 'class': 'person', 'score': 0.838}]
-    response['all'] = responseEnsemble
-    return jsonify(response), 200
+
+def init(outstream, MODELS_IN_USE, frameBuffers):
+    global models
+    global framebuffers
+    global output
+
+    for mi, model in enumerate(MODELS_IN_USE):
+        models[model[0]] = mi
+    framebuffers.extend(frameBuffers)
+    output = outstream
 
 @app.route('/detect_objects', methods=['POST'])
 def detect_objects():
+    global frameId
     if not request.json or not 'image' in request.json:
         abort(400)
     # print('request image:' + str(request.json['image']))
@@ -193,20 +214,37 @@ def detect_objects():
 
     # image = base64tocv2(request.json['image'])
     response = {}
-    # if request.json['mode'] == 'parallel':
-    #     responsePerModel = []
-    #     for modelObj in request.json['models']:
-    #         objects, fps = detect(image)
-    #         responsePerModel = objects
-    #         response[modelObj['model']] = responsePerModel
+    frameId += 1
+    for model in request.json['models']:
+        conf, iou, model_name = model['conf'], model['iou'], model['model']
+        detect(image, model_name, frameId, iou, conf, request.json['mode'])
+
+            # objects, fps = detect(image, model_name, iou, conf)
+            # responsePerModel = objects
+            # response[model] = responsePerModel
     # elif request.json['mode'] == 'ensemble':
     #     # responseEnsemble is the prediction results(bounding boxes) of the ensemble model
-    #     responseEnsemble = []
     #     responseEnsemble = [{'bbox': [1, 0, 200, 200], 'class': 'person', 'score': 0.838}]
     #     response['all'] = responseEnsemble
-
     return jsonify(response), 201
 
+@app.route('/detect_objects_response', methods=['GET'])
+def detect_objects_response():
+    global models
+
+    response = {}
+    results = output.get()
+    print("DEBUG", results)
+    for model, index in models.items():
+        objects_detected = []
+        for obj in results[index]:
+            if obj.confidence < 0.2:
+                continue
+            objects_detected.append({'bbox': [obj.xmin, obj.ymin, obj.xmax - obj.xmin, obj.ymax - obj.ymin],
+                                     'class': LABELS[obj.class_id], 'score': float(obj.confidence)})
+        response[model] = objects_detected
+
+    return jsonify(response), 201
 
 @app.errorhandler(404)
 def not_found(error):
