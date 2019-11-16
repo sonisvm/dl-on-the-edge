@@ -21,6 +21,10 @@ class Video extends Component {
   }
 
   drawFrame = () => {
+    if (!this.videoRef.current || !this.canvasRef.current) {
+      this.videoRef.current.pause();
+      return;
+    }
     //console.log("in draw frame");
     if(!this.paused) {
       this.videoRef.current.pause();
@@ -34,7 +38,9 @@ class Video extends Component {
         reader.onload = file => {
           getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
                .then(data => {
-
+                 if (!this.bbCanvasRef.current) {
+                   return;
+                 }
                  showDetections(data, this.bbCanvasRef.current);
 
                });

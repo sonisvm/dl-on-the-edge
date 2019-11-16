@@ -20,6 +20,10 @@ class WebCam extends Component {
   }
 
   drawFrame = () => {
+    if (!this.videoRef.current || !this.canvasRef.current) {
+      this.videoRef.current.pause();
+      return;
+    }
     if(!this.paused) {
       this.videoRef.current.pause();
       const ctx = this.canvasRef.current.getContext("2d");
@@ -31,6 +35,9 @@ class WebCam extends Component {
         reader.onload = file => {
           getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
                .then(data => {
+                 if (!this.bbCanvasRef.current) {
+                   return;
+                 }
                  showDetections(data, this.bbCanvasRef.current);
                });
         }
@@ -89,7 +96,7 @@ class WebCam extends Component {
         <Row>
           <div>
             <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
-            
+
           </div>
         </Row>
         <Row className="fullHeight frame">
