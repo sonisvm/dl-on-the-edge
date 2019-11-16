@@ -41,7 +41,14 @@ class Upload extends Component {
 
   }
 
+  componentDidMount() {
+    fetch("http://localhost:5000/shutdown",{method:'POST'})
+        .then(data => {})
+  }
+
   startOver = ()=>{
+    fetch("http://localhost:5000/shutdown",{method:'POST'})
+        .then(data => {})
     this.setState({
       uploading: false,
       uploaded: false,

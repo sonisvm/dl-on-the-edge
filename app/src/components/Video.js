@@ -49,7 +49,7 @@ class Video extends Component {
         reader.readAsDataURL(blob);
       }, 'image/jpeg');
       requestAnimationFrame(()=>{
-       if (this.videoRef.current.currentTime < this.videoRef.current.duration && !this.paused) {
+       if (this.videoRef.current.currentTime < this.videoRef.current.duration-1 && !this.paused) {
          setTimeout(() => {
            this.videoRef.current.play();
          }, 33)
@@ -64,7 +64,6 @@ class Video extends Component {
     this.videoRef.current.src = this.props.src;
     this.videoRef.current.onplay = this.drawFrame;
     this.videoRef.current.muted = true;
-    this.videoRef.current.loop = true;
 
     //showing first frame of video
     this.videoRef.current.onloadeddata = () => {
