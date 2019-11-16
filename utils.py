@@ -1,304 +1,128 @@
-# -*- coding: utf-8 -*-
-
-import numpy as np
-import tensorflow as tf
-from PIL import ImageDraw, Image
+import math
 
 
-def get_boxes_and_inputs_pb(frozen_graph):
-
-    with frozen_graph.as_default():
-        boxes = tf.get_default_graph().get_tensor_by_name("output_boxes:0")
-        inputs = tf.get_default_graph().get_tensor_by_name("inputs:0")
-
-    return boxes, inputs
-
-
-def get_boxes_and_inputs(model, num_classes, size, data_format):
-
-    inputs = tf.placeholder(tf.float32, [1, size, size, 3])
-
-    with tf.variable_scope('detector'):
-        detections = model(inputs, num_classes,
-                           data_format=data_format)
-
-    boxes = detections_boxes(detections)
-
-    return boxes, inputs
+class DetectionObject(object):
+    def __init__(self, x, y, h, w, class_id, class_name, confidence, h_scale, w_scale):
+        self.xmin = int((x - w / 2) * w_scale)
+        self.ymin = int((y - h / 2) * h_scale)
+        self.xmax = int(self.xmin + w * w_scale)
+        self.ymax = int(self.ymin + h * h_scale)
+        self.class_id = class_id
+        self.name = LABELS[class_id]
+        self.confidence = confidence
 
 
-def load_graph(frozen_graph_filename):
+class YoloParams:
+    def __init__(self, param, side):
+        self.num = int(param['num'])
+        self.coords = int(param['coords'])
+        self.classes = int(param['classes'])
+        self.anchors = [float(a) for a in param['anchors'].split(',')]
 
-    with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
-        graph_def = tf.GraphDef()
-        graph_def.ParseFromString(f.read())
+        if 'mask' in param:
+            mask = [int(idx) for idx in param['mask'].split(',')]
+            self.num = len(mask)
 
-    with tf.Graph().as_default() as graph:
-        tf.import_graph_def(graph_def, name="")
+            maskedAnchors = []
+            for idx in mask:
+                maskedAnchors += [self.anchors[idx * 2], self.anchors[idx * 2 + 1]]
+            self.anchors = maskedAnchors
 
-    return graph
+        self.side = side
+        self.isYoloV3 = 'mask' in param  # Weak way to determine but the only one.
 
 
-def freeze_graph(sess, output_graph, tiny):
+def entry_index(side, coord, classes, location, entry):
+    side_power_2 = side ** 2
+    n = location // side_power_2
+    loc = location % side_power_2
+    return int(side_power_2 * (n * (coord + classes + 1) + entry) + loc)
 
-    output_node_names=[]
-    if tiny:
-        output_node_names = [
-            "output_boxes",
-            "inputs",
-        ]
+
+def parse_yolo_region(blob, resized_image_shape, original_im_shape, params, threshold):
+    _, _, out_blob_h, out_blob_w = blob.shape
+    assert out_blob_w == out_blob_h, "Invalid size of output blob. It sould be in NCHW layout and height should " \
+                                     "be equal to width. Current height = {}, current width = {}" \
+                                     "".format(out_blob_h, out_blob_w)
+    orig_im_h, orig_im_w = original_im_shape
+    resized_image_h, resized_image_w = resized_image_shape
+    objects = list()
+    predictions = blob.flatten()
+    side_square = params.side * params.side
+
+    for i in range(side_square):
+        row = i // params.side
+        col = i % params.side
+        for n in range(params.num):
+            obj_index = entry_index(params.side, params.coords, params.classes, n * side_square + i, params.coords)
+            scale = predictions[obj_index]
+            if scale < threshold:
+                continue
+            box_index = entry_index(params.side, params.coords, params.classes, n * side_square + i, 0)
+            x = (col + predictions[box_index + 0 * side_square]) / params.side
+            y = (row + predictions[box_index + 1 * side_square]) / params.side
+            try:
+                w_exp = math.exp(predictions[box_index + 2 * side_square])
+                h_exp = math.exp(predictions[box_index + 3 * side_square])
+            except OverflowError:
+                continue
+            w = w_exp * params.anchors[2 * n] / (resized_image_w if params.isYoloV3 else params.side)
+            h = h_exp * params.anchors[2 * n + 1] / (resized_image_h if params.isYoloV3 else params.side)
+            for j in range(params.classes):
+                class_index = entry_index(params.side, params.coords, params.classes, n * side_square + i,
+                                          params.coords + 1 + j)
+                confidence = scale * predictions[class_index]
+                if confidence < threshold:
+                    continue
+                objects.append(scale_bbox(x=x, y=y, h=h, w=w, class_id=j, confidence=confidence,
+                                          h_scale=orig_im_h, w_scale=orig_im_w))
+    return objects
+
+
+def scale_bbox(x, y, h, w, class_id, confidence, h_scale, w_scale):
+    xmin = int((x - w / 2) * w_scale)
+    ymin = int((y - h / 2) * h_scale)
+    xmax = int(xmin + w * w_scale)
+    ymax = int(ymin + h * h_scale)
+    return dict(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, class_id=class_id, confidence=confidence)
+
+
+def intersection_over_union(box_1, box_2):
+    width_of_overlap_area = min(box_1['xmax'], box_2['xmax']) - max(box_1['xmin'], box_2['xmin'])
+    height_of_overlap_area = min(box_1['ymax'], box_2['ymax']) - max(box_1['ymin'], box_2['ymin'])
+    if width_of_overlap_area < 0 or height_of_overlap_area < 0:
+        area_of_overlap = 0
     else:
-        output_node_names = [
-            "output_boxes",
-            "inputs",
-        ]
-    output_node_names = ",".join(output_node_names)
-
-    output_graph_def = tf.graph_util.convert_variables_to_constants(
-        sess,
-        tf.get_default_graph().as_graph_def(),
-        output_node_names.split(",")
-    )
-
-    with tf.gfile.GFile(output_graph, "wb") as f:
-        f.write(output_graph_def.SerializeToString())
-
-    print("{} ops written to {}.".format(len(output_graph_def.node), output_graph))
+        area_of_overlap = width_of_overlap_area * height_of_overlap_area
+    box_1_area = (box_1['ymax'] - box_1['ymin']) * (box_1['xmax'] - box_1['xmin'])
+    box_2_area = (box_2['ymax'] - box_2['ymin']) * (box_2['xmax'] - box_2['xmin'])
+    area_of_union = box_1_area + box_2_area - area_of_overlap
+    if area_of_union == 0:
+        return 0
+    return area_of_overlap / area_of_union
 
 
-def load_weights(var_list, weights_file):
-    """
-    Loads and converts pre-trained weights.
-    :param var_list: list of network variables.
-    :param weights_file: name of the binary file.
-    :return: list of assign ops
-    """
-    with open(weights_file, "rb") as fp:
-        _ = np.fromfile(fp, dtype=np.int32, count=5)
+def ParseYOLOV3Output(net, outputs, resized_image_shape, original_image_shape, t_conf=0.50, t_iou=0.40):
+    objects = list()
+    for layer_name, out_blob in outputs.items():
+        out_blob = out_blob.reshape(net.layers[net.layers[layer_name].parents[0]].shape)
+        layer_params = YoloParams(net.layers[layer_name].params, out_blob.shape[2])
+        objects += parse_yolo_region(out_blob, resized_image_shape, original_image_shape, layer_params, t_conf)
 
-        weights = np.fromfile(fp, dtype=np.float32)
+    objects = sorted(objects, key=lambda obj: obj['confidence'], reverse=True)
+    for i in range(len(objects)):
+        if objects[i]['confidence'] == 0:
+            continue
+        for j in range(i + 1, len(objects)):
+            if intersection_over_union(objects[i], objects[j]) > t_iou:
+                objects[j]['confidence'] = 0
 
-    ptr = 0
-    i = 0
-    assign_ops = []
-    while i < len(var_list) - 1:
-        var1 = var_list[i]
-        var2 = var_list[i + 1]
-        # do something only if we process conv layer
-        if 'Conv' in var1.name.split('/')[-2]:
-            # check type of next layer
-            if 'BatchNorm' in var2.name.split('/')[-2]:
-                # load batch norm params
-                gamma, beta, mean, var = var_list[i + 1:i + 5]
-                batch_norm_vars = [beta, gamma, mean, var]
-                for var in batch_norm_vars:
-                    shape = var.shape.as_list()
-                    num_params = np.prod(shape)
-                    var_weights = weights[ptr:ptr + num_params].reshape(shape)
-                    ptr += num_params
-                    assign_ops.append(
-                        tf.assign(var, var_weights, validate_shape=True))
-
-                # we move the pointer by 4, because we loaded 4 variables
-                i += 4
-            elif 'Conv' in var2.name.split('/')[-2]:
-                # load biases
-                bias = var2
-                bias_shape = bias.shape.as_list()
-                bias_params = np.prod(bias_shape)
-                bias_weights = weights[ptr:ptr +
-                                       bias_params].reshape(bias_shape)
-                ptr += bias_params
-                assign_ops.append(
-                    tf.assign(bias, bias_weights, validate_shape=True))
-
-                # we loaded 1 variable
-                i += 1
-            # we can load weights of conv layer
-            shape = var1.shape.as_list()
-            num_params = np.prod(shape)
-
-            var_weights = weights[ptr:ptr + num_params].reshape(
-                (shape[3], shape[2], shape[0], shape[1]))
-            # remember to transpose to column-major
-            var_weights = np.transpose(var_weights, (2, 3, 1, 0))
-            ptr += num_params
-            assign_ops.append(
-                tf.assign(var1, var_weights, validate_shape=True))
-            i += 1
-
-    return assign_ops
-
-
-def detections_boxes(detections):
-    """
-    Converts center x, center y, width and height values to coordinates of top left and bottom right points.
-
-    :param detections: outputs of YOLO v3 detector of shape (?, 10647, (num_classes + 5))
-    :return: converted detections of same shape as input
-    """
-    center_x, center_y, width, height, attrs = tf.split(
-        detections, [1, 1, 1, 1, -1], axis=-1)
-    w2 = width / 2
-    h2 = height / 2
-    x0 = center_x - w2
-    y0 = center_y - h2
-    x1 = center_x + w2
-    y1 = center_y + h2
-
-    boxes = tf.concat([x0, y0, x1, y1], axis=-1)
-    detections = tf.concat([boxes, attrs], axis=-1, name="output_boxes")
-    return detections
-
-
-def _iou(box1, box2):
-    """
-    Computes Intersection over Union value for 2 bounding boxes
-
-    :param box1: array of 4 values (top left and bottom right coords): [x0, y0, x1, x2]
-    :param box2: same as box1
-    :return: IoU
-    """
-    b1_x0, b1_y0, b1_x1, b1_y1 = box1
-    b2_x0, b2_y0, b2_x1, b2_y1 = box2
-
-    int_x0 = max(b1_x0, b2_x0)
-    int_y0 = max(b1_y0, b2_y0)
-    int_x1 = min(b1_x1, b2_x1)
-    int_y1 = min(b1_y1, b2_y1)
-
-    int_area = (int_x1 - int_x0) * (int_y1 - int_y0)
-
-    b1_area = (b1_x1 - b1_x0) * (b1_y1 - b1_y0)
-    b2_area = (b2_x1 - b2_x0) * (b2_y1 - b2_y0)
-
-    # we add small epsilon of 1e-05 to avoid division by 0
-    iou = int_area / (b1_area + b2_area - int_area + 1e-05)
-    return iou
-
-
-def non_max_suppression(predictions_with_boxes, confidence_threshold, iou_threshold=0.4):
-    """
-    Applies Non-max suppression to prediction boxes.
-
-    :param predictions_with_boxes: 3D numpy array, first 4 values in 3rd dimension are bbox attrs, 5th is confidence
-    :param confidence_threshold: the threshold for deciding if prediction is valid
-    :param iou_threshold: the threshold for deciding if two boxes overlap
-    :return: dict: class -> [(box, score)]
-    """
-    conf_mask = np.expand_dims(
-        (predictions_with_boxes[:, :, 4] > confidence_threshold), -1)
-    predictions = predictions_with_boxes * conf_mask
-
-    result = {}
-    for i, image_pred in enumerate(predictions):
-        shape = image_pred.shape
-        non_zero_idxs = np.nonzero(image_pred)
-        image_pred = image_pred[non_zero_idxs]
-        image_pred = image_pred.reshape(-1, shape[-1])
-
-        bbox_attrs = image_pred[:, :5]
-        classes = image_pred[:, 5:]
-        classes = np.argmax(classes, axis=-1)
-
-        unique_classes = list(set(classes.reshape(-1)))
-
-        for cls in unique_classes:
-            cls_mask = classes == cls
-            cls_boxes = bbox_attrs[np.nonzero(cls_mask)]
-            cls_boxes = cls_boxes[cls_boxes[:, -1].argsort()[::-1]]
-            cls_scores = cls_boxes[:, -1]
-            cls_boxes = cls_boxes[:, :-1]
-
-            while len(cls_boxes) > 0:
-                box = cls_boxes[0]
-                score = cls_scores[0]
-                if cls not in result:
-                    result[cls] = []
-                result[cls].append((box, score))
-                cls_boxes = cls_boxes[1:]
-                cls_scores = cls_scores[1:]
-                ious = np.array([_iou(box, x) for x in cls_boxes])
-                iou_mask = ious < iou_threshold
-                cls_boxes = cls_boxes[np.nonzero(iou_mask)]
-                cls_scores = cls_scores[np.nonzero(iou_mask)]
-
-    return result
-
-
-def load_coco_names(file_name):
-    names = {}
-    with open(file_name) as f:
-        for id, name in enumerate(f):
-            names[id] = name
-    return names
-
-
-def draw_boxes(boxes, img, cls_names, detection_size, is_letter_box_image):
-    draw = ImageDraw.Draw(img)
-
-    for cls, bboxs in boxes.items():
-        color = tuple(np.random.randint(0, 256, 3))
-        for box, score in bboxs:
-            box = convert_to_original_size(box, np.array(detection_size),
-                                           np.array(img.size),
-                                           is_letter_box_image)
-            draw.rectangle(box, outline=color)
-            draw.text(box[:2], '{} {:.2f}%'.format(
-                cls_names[cls], score * 100), fill=color)
-
-
-def convert_to_original_size(box, size, original_size, is_letter_box_image):
-    if is_letter_box_image:
-        box = box.reshape(2, 2)
-        box[0, :] = letter_box_pos_to_original_pos(box[0, :], size, original_size)
-        box[1, :] = letter_box_pos_to_original_pos(box[1, :], size, original_size)
-    else:
-        ratio = original_size / size
-        box = box.reshape(2, 2) * ratio
-    return list(box.reshape(-1))
-
-
-def letter_box_image(image: Image.Image, output_height: int, output_width: int, fill_value)-> np.ndarray:
-    """
-    Fit image with final image with output_width and output_height.
-    :param image: PILLOW Image object.
-    :param output_height: width of the final image.
-    :param output_width: height of the final image.
-    :param fill_value: fill value for empty area. Can be uint8 or np.ndarray
-    :return: numpy image fit within letterbox. dtype=uint8, shape=(output_height, output_width)
-    """
-
-    height_ratio = float(output_height)/image.size[1]
-    width_ratio = float(output_width)/image.size[0]
-    fit_ratio = min(width_ratio, height_ratio)
-    fit_height = int(image.size[1] * fit_ratio)
-    fit_width = int(image.size[0] * fit_ratio)
-    fit_image = np.asarray(image.resize((fit_width, fit_height), resample=Image.BILINEAR))
-
-    if isinstance(fill_value, int):
-        fill_value = np.full(fit_image.shape[2], fill_value, fit_image.dtype)
-
-    to_return = np.tile(fill_value, (output_height, output_width, 1))
-    pad_top = int(0.5 * (output_height - fit_height))
-    pad_left = int(0.5 * (output_width - fit_width))
-    to_return[pad_top:pad_top+fit_height, pad_left:pad_left+fit_width] = fit_image
-    return to_return
-
-
-def letter_box_pos_to_original_pos(letter_pos, current_size, ori_image_size)-> np.ndarray:
-    """
-    Parameters should have same shape and dimension space. (Width, Height) or (Height, Width)
-    :param letter_pos: The current position within letterbox image including fill value area.
-    :param current_size: The size of whole image including fill value area.
-    :param ori_image_size: The size of image before being letter boxed.
-    :return:
-    """
-    letter_pos = np.asarray(letter_pos, dtype=np.float)
-    current_size = np.asarray(current_size, dtype=np.float)
-    ori_image_size = np.asarray(ori_image_size, dtype=np.float)
-    final_ratio = min(current_size[0]/ori_image_size[0], current_size[1]/ori_image_size[1])
-    pad = 0.5 * (current_size - final_ratio * ori_image_size)
-    pad = pad.astype(np.int32)
-    to_return_pos = (letter_pos - pad) / final_ratio
-    return to_return_pos
+    objects_c = []
+    for obj in objects:
+        if obj['confidence'] >= t_conf:
+            x_min, y_min = max(obj['xmin'], 0), max(obj['ymin'], 0)
+            x_max, y_max = min(obj['xmax'], original_image_shape[1]), min(obj['ymax'], original_image_shape[0])
+            W, H = x_max - x_min, y_max - y_min
+            x, y = x_min + W / 2., y_min + H / 2.
+            objects_c.append(DetectionObject(x, y, H, W, obj['class_id'], obj['confidence'], 1., 1.))
+    return objects_c
