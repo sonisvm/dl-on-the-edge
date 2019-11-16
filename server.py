@@ -7,7 +7,7 @@ from flask import Flask, jsonify, abort, make_response, request
 from flask_cors import CORS
 import base64
 import multiprocessing as mp
-
+import heapq
 
 try:
     from armv7l.openvino.inference_engine import IENetwork, IEPlugin
@@ -148,30 +148,6 @@ def detect(image, model, frameid, conf=0.2, iou=0.45, mode="parallel"):
     # outputs = exec_net[exec_net_index].infer(inputs={input_blob: prepimg})
     # exec_net_index = (exec_net_index + 1) % 2
     framebuffers[model_index].put((frameid, image))
-    return
-
-    objects = []
-    for output in outputs.values():
-        objects = ParseYOLOV3Output(output, new_h, new_w, camera_height, camera_width, 0.4, objects)
-
-    # Filtering overlapping boxes
-    obj_len = len(objects)
-    for i in range(obj_len):
-        if objects[i].confidence == 0.0:
-            continue
-        for j in range(i + 1, obj_len):
-            if IntersectionOverUnion(objects[i], objects[j]) >= 0.4:
-                if objects[i].confidence < objects[j].confidence:
-                    objects[i], objects[j] = objects[j], objects[i]
-                objects[j].confidence = 0.0
-
-    objects_detected = []
-    for obj in objects:
-        if obj.confidence < 0.2:
-            continue
-        objects_detected.append({'bbox': [obj.xmin, obj.ymin, obj.xmax-obj.xmin, obj.ymax-obj.ymin],
-                                 'class': LABELS[obj.class_id], 'score': float(obj.confidence)})
-    return objects_detected, float(1 / (time.time() - t1))
 
 
 def base64tocv2(s):
@@ -232,6 +208,19 @@ def detect_objects():
     #     response['all'] = responseEnsemble
     return jsonify(response), 201
 
+fps_stats = []
+
+
+def get_fps_stats():
+    while fps_stats and fps_stats[0] < time.time() - 5:
+        heapq.heappop(fps_stats)
+    return len(fps_stats) / 5
+
+
+def record_fps():
+    heapq.heappush(fps_stats, time.time())
+
+
 @app.route('/detect_objects_response', methods=['GET'])
 def detect_objects_response():
     global models
@@ -248,7 +237,11 @@ def detect_objects_response():
             objects_detected.append({'bbox': [obj.xmin, obj.ymin, obj.xmax - obj.xmin, obj.ymax - obj.ymin],
                                      'class': LABELS[obj.class_id], 'score': float(obj.confidence)})
         response[model_name] = objects_detected
-
+    if model_names:
+        record_fps()
+        response["fps"] = get_fps_stats()
+    else:
+        response["fps"] = None
     return jsonify(response), 201
 
 @app.errorhandler(404)

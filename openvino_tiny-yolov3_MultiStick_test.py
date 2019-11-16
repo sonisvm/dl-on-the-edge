@@ -16,6 +16,7 @@ classes = 80
 coords = 4
 num = 3
 anchors = [10,14, 23,27, 37,58, 81,82, 135,169, 344,319]
+fps_stats = []
 
 LABELS = ("person", "bicycle", "car", "motorbike", "aeroplane",
           "bus", "train", "truck", "boat", "traffic light",
@@ -393,7 +394,7 @@ def inferencer(results, frameBuffers, number_of_ncs, camera_width, camera_height
     threads = []
     sleep_time = 2
     for devid in range(number_of_ncs):
-        print("Plugin the device now and press")
+        print("Plugin the device in now")
         # sleep(devid * 5)
         for mi, model in enumerate(MODELS_IN_USE):
             while True:
@@ -418,7 +419,6 @@ def inferencer(results, frameBuffers, number_of_ncs, camera_width, camera_height
                     print("failed, trying again in ", sleep_time)
 
                     sleep(sleep_time)
-                    sleep_time = int(sleep_time * 1.5)
     for th in threads:
         th.join()
 
