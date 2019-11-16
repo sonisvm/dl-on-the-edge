@@ -29,7 +29,7 @@ class WebCam extends Component {
       const ctx = this.canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawImageProp(ctx, this.videoRef.current);
-
+  
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {

@@ -63,6 +63,18 @@ class ObjectDetector extends Component {
     });
   }
 
+  backButton= () =>{
+    this.setState({
+      models: new Set(['coco_tiny_yolov3_320']),
+      config:{
+        coco_tiny_yolov3_320:{conf: '0.20', iou:'0.45'}
+      },
+      execution_mode: 'parallel'
+    });
+    this.props.back();
+  }
+
+
   render() {
     let showScreen = this.state.execution_mode && this.state.models.size!==0;
 
@@ -81,7 +93,7 @@ class ObjectDetector extends Component {
     return (
       <Container fluid={true}>
         <Row>
-          <Button variant="link" onClick={this.props.back} className="backButton">
+          <Button variant="link" onClick={this.backButton} className="backButton">
             <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
           </Button>
         </Row>

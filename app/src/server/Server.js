@@ -1,4 +1,6 @@
 
+var generator="";
+
 function *pollForResult(){
   var models = yield [];
   while (true) {
@@ -7,14 +9,7 @@ function *pollForResult(){
   }
 }
 
-const generator = pollForResult();
-generator.next();
 
-// function runPolling(resolve, reject) {
-//   console.log("in polling");
-//
-//
-// }
 
 var wrapper = function(models) {
   return new Promise(function(resolve, reject) {
@@ -38,6 +33,8 @@ export function getPredictions(image, mode, models, config) {
       iou: config[model].iou
     });
   });
+  generator = pollForResult();
+  generator.next();
 
   return fetch("http://localhost:5000/detect_objects", {
            method: 'POST',
