@@ -76,14 +76,14 @@ class Video extends Component {
   }
 
   startVideo = () => {
-    console.log("start again");
     this.paused = false;
     this.videoRef.current.play();
 
   }
 
   stopVideo = () => {
-    console.log("in stopVideo");
+    fetch("http://localhost:5000/shutdown",{method:'POST'})
+        .then(data => {})
     this.paused = true;
     this.videoRef.current.pause();
 
@@ -95,7 +95,7 @@ class Video extends Component {
         <Row>
           <div>
             <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
-
+            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
           </div>
         </Row>
         <Row className="fullHeight frame">
