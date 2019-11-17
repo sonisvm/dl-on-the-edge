@@ -29,7 +29,7 @@ class WebCam extends Component {
       const ctx = this.canvasRef.current.getContext("2d");
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       drawImageProp(ctx, this.videoRef.current);
-  
+
       this.canvasRef.current.toBlob(blob=>{
         let reader = new FileReader();
         reader.onload = file => {
@@ -85,6 +85,8 @@ class WebCam extends Component {
   }
 
   stopVideo = () => {
+    fetch("http://localhost:5000/shutdown",{method:'POST'})
+        .then(data => {})
     this.paused = true;
     window.stream.getTracks().forEach(track => track.stop())
 
@@ -96,7 +98,7 @@ class WebCam extends Component {
         <Row>
           <div>
             <Button className="controlBtn" onClick={this.startVideo}>Start Detection</Button>
-
+            <Button className="controlBtn" onClick={this.stopVideo}>Stop Detection</Button>
           </div>
         </Row>
         <Row className="fullHeight frame">

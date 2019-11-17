@@ -25,7 +25,7 @@ export function showDetections(data, canvas) {
       const height = prediction.bbox[3];
       // Draw the bounding box.
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
       ctx.strokeRect(x, y, width, height);
       // Draw the label background.
       ctx.fillStyle = color;
