@@ -37,6 +37,8 @@ class Photo extends Component {
       reader.onload = file => {
         getPredictions(file.target.result, this.props.execution_mode, this.props.models, this.props.config)
              .then(data => {
+               //don't want to show fps, so delete the key
+               delete data.fps
                showDetections(data, this.bbCanvasRef.current);
              });
       }
