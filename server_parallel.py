@@ -1,39 +1,27 @@
+from openvino.inference_engine import IENetwork, IEPlugin
 from time import sleep
 import multiprocessing as mp
+import numpy as np
+import threading
+import argparse
+import heapq
+import math
 import sys
 import cv2
-import heapq
-import argparse
-import numpy as np
-import math
-import threading
-try:
-    from armv7l.openvino.inference_engine import IENetwork, IEPlugin
-except:
-    from openvino.inference_engine import IENetwork, IEPlugin
 
 DATASET = 'voc'
 
-yolo_scale_13 = 13
-yolo_scale_26 = 26
-yolo_scale_52 = 52
-
-coords = 4
-num = 3
-anchors = [10, 14, 23, 27, 37, 58, 81, 82, 135, 169, 344, 319]
-
-LABELS = []
-with open('./%s.names' % DATASET, 'r') as f:
+class_names = []
+with open('./data/%s.names' % DATASET, 'r') as f:
     for line in f.readlines():
-        cls_name = line.strip()
-        if len(cls_name) > 0:
-            LABELS.append(cls_name)
-classes = len(LABELS)
+        class_name = line.strip()
+        if len(class_name) > 0:
+            class_names.append(class_name)
 
-MODELS_IN_USE = (
+MODELS_IN_USE = (  # NOTE: change models and input size here
     ("coco_tiny_yolov3_320", 320),
     ("coco_tiny_yolov3_352", 352),
-    # ("coco_tiny_yolov3_384", 384),
+    ("coco_tiny_yolov3_384", 384),
     # ("coco_tiny_yolov3_416", 416),
     # ("coco_tiny_yolov3_448", 448),
     # ("coco_tiny_yolov3_480", 480),
@@ -41,15 +29,11 @@ MODELS_IN_USE = (
     # ("coco_tiny_yolov3_544", 544),
     # ("coco_tiny_yolov3_576", 576),
     # ("coco_tiny_yolov3_608", 608),
-    # NOTE: change models and input size here
 )
-
-processes = []
 
 
 def server(frameBuffers, api_results):
     from server import app, init
-
     init(api_results, MODELS_IN_USE, frameBuffers)
     while True:
         app.run(debug=False, host="0.0.0.0")
@@ -62,7 +46,7 @@ class DetectionObject(object):
         self.xmax = int(self.xmin + w * w_scale)
         self.ymax = int(self.ymin + h * h_scale)
         self.class_id = class_id
-        self.name = LABELS[class_id]
+        self.name = class_names[class_id]
         self.confidence = confidence
 
 
@@ -165,7 +149,7 @@ def ParseYOLOV3Output(net, outputs, resized_image_shape, original_image_shape, t
 
     objects = sorted(objects, key=lambda obj: obj['confidence'], reverse=True)
     for i in range(len(objects)):
-        if objects[i]['confidence'] == 0:
+        if objects[i]['confidence'] < t_conf:
             continue
         for j in range(i + 1, len(objects)):
             if intersection_over_union(objects[i], objects[j]) > t_iou:
@@ -196,30 +180,31 @@ class NcsWorker(object):
     def __init__(self, devid, frameBuffer, results, number_of_ncs, api_results, model_name, input_size, plugin):
         self.devid = devid
         self.model_name = model_name.replace('coco', DATASET)
-        self.frameBuffer = frameBuffer
         self.model_xml = "./models/FP16/%s.xml" % self.model_name
         self.model_bin = "./models/FP16/%s.bin" % self.model_name
+
         self.m_input_size = input_size
         self.num_requests = 4
         self.inferred_request = [0] * self.num_requests
         self.heap_request = []
         self.inferred_cnt = 0
+
         self.plugin = plugin
         self.net = IENetwork(model=self.model_xml, weights=self.model_bin)
         self.input_blob = next(iter(self.net.inputs))
         self.exec_net = self.plugin.load(network=self.net, num_requests=self.num_requests)
 
+        self.frameBuffer = frameBuffer
         self.results = results
         self.api_results = api_results
         self.number_of_ncs = number_of_ncs
-        self.predict_async_time = 800
         self.skip_frame = 0
         self.roop_frame = 0
 
     def image_preprocessing(self, color_image):
         camera_width, camera_height = color_image.shape[1], color_image.shape[0]
-        new_w = int(camera_width * min(self.m_input_size / camera_width, self.m_input_size / camera_height))
-        new_h = int(camera_height * min(self.m_input_size / camera_width, self.m_input_size / camera_height))
+        scale = min(self.m_input_size / camera_width, self.m_input_size / camera_height)
+        new_w, new_h = int(camera_width * scale), int(camera_height * scale)
         resized_image = cv2.resize(color_image, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
         canvas = np.full((self.m_input_size, self.m_input_size, 3), 128)
         top = (self.m_input_size - new_h) // 2
@@ -234,60 +219,57 @@ class NcsWorker(object):
 
     def predict_async(self):
         try:
-            if self.frameBuffer.empty():
-                return
-            self.roop_frame += 1
-            if self.roop_frame <= self.skip_frame:
-                self.frameBuffer.get()
-                return
-            self.roop_frame = 0
-            frameId, image, conf, iou = self.frameBuffer.get()
+            if not self.frameBuffer.empty():
+                self.roop_frame += 1
+                if self.roop_frame <= self.skip_frame:
+                    self.frameBuffer.get()
+                    return
+                self.roop_frame = 0
+                frameId, image, t_conf, t_iou, mode = self.frameBuffer.get()
 
-            req_num = search_list(self.inferred_request, 0)
-            if req_num > -1:
-                prep_img = self.image_preprocessing(image)
-                self.exec_net.start_async(request_id=req_num, inputs={self.input_blob: prep_img})
-                self.inferred_request[req_num] = 1
-                self.inferred_cnt += 1
-                if self.inferred_cnt == sys.maxsize:
-                    self.inferred_request = [0] * self.num_requests
-                    self.heap_request = []
-                    self.inferred_cnt = 0
-                heapq.heappush(self.heap_request, (self.inferred_cnt, req_num))
+                req_num = search_list(self.inferred_request, 0)
+                if req_num > -1:
+                    prep_img = self.image_preprocessing(image)
+                    self.exec_net.start_async(request_id=req_num, inputs={self.input_blob: prep_img})
+                    self.inferred_request[req_num] = 1
+                    self.inferred_cnt += 1
+                    if self.inferred_cnt == sys.maxsize:
+                        self.inferred_request = [0] * self.num_requests
+                        self.heap_request = []
+                        self.inferred_cnt = 0
+                    heapq.heappush(self.heap_request, (self.inferred_cnt, req_num, frameId,
+                                                       image.shape[1], image.shape[0], t_conf, t_iou, mode))
 
-            cnt, dev = heapq.heappop(self.heap_request)
-            if self.exec_net.requests[dev].wait(0) == 0:
-                self.exec_net.requests[dev].wait(-1)
-                camera_width = image.shape[1]
-                camera_height = image.shape[0]
-                new_w = int(camera_width * min(self.m_input_size / camera_width, self.m_input_size / camera_height))
-                new_h = int(camera_height * min(self.m_input_size / camera_width, self.m_input_size / camera_height))
-                outputs = self.exec_net.requests[dev].outputs
-                objects = ParseYOLOV3Output(self.net, outputs, (new_h, new_w), (camera_height, camera_width), conf, iou)
-                print("[fid %d] Processed at device %d with t_conf = %.2f and t_iou = %.2f using %s => %d objects" % (
-                    frameId, self.devid, conf, iou, self.model_name, len(objects)))
-                self.api_results.put((frameId, objects))
-                self.inferred_request[dev] = 0
-            else:
-                heapq.heappush(self.heap_request, (cnt, dev))
+            if len(self.heap_request) > 0:
+                cnt, dev, frameId, camera_width, camera_height, t_conf, t_iou, mode = heapq.heappop(self.heap_request)
+                if self.exec_net.requests[dev].wait(0) == 0:
+                    self.exec_net.requests[dev].wait(-1)
+                    scale = min(self.m_input_size / camera_width, self.m_input_size / camera_height)
+                    new_w, new_h = int(camera_width * scale), int(camera_height * scale)
+                    outputs = self.exec_net.requests[dev].outputs
+                    objects = ParseYOLOV3Output(self.net, outputs, (new_h, new_w),
+                                                (camera_height, camera_width), t_conf, t_iou)
+                    self.api_results.put((frameId, objects, mode, t_iou))
+                    self.inferred_request[dev] = 0
+                else:
+                    heapq.heappush(self.heap_request, (cnt, dev, frameId, camera_width, camera_height,
+                                                       t_conf, t_iou, mode))
         except:
             import traceback
             traceback.print_exc()
 
 
-def inferencer(results, frameBuffers, number_of_ncs, api_results):
-    # Init infer threads
+def inferencer(results, frameBuffers, number_of_ncs, api_results, sleep_time=2):
     threads = []
-    sleep_time = 2
+
     plugin = None
     for devid in range(number_of_ncs):
         print("Plugin the device in now")
-
         for mi, model in enumerate(MODELS_IN_USE):
             while True:
                 try:
                     if mi == 0:
-                        plugin = IEPlugin(device="MYRIAD")
+                        plugin = IEPlugin(device="MYRIAD")  # TODO: Keep creating new IEPlugin if failed?
                         print('[Device %d/%d] IEPlugin initialized' % (devid + 1, number_of_ncs))
                     model_name, input_size = model
                     thworker = threading.Thread(target=async_infer, args=(
@@ -313,11 +295,11 @@ def inferencer(results, frameBuffers, number_of_ncs, api_results):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-numncs', '--numberofncs', dest='number_of_ncs', type=int, default=1,
+    parser.add_argument('-numncs', '--number_of_ncs', dest='number_of_ncs', type=int, default=1,
                         help='Number of NCS. (Default=1)')
     args = parser.parse_args()
     number_of_ncs = args.number_of_ncs
-
+    processes = []
     try:
         mp.set_start_method('forkserver')
         frameBuffers = []
@@ -328,10 +310,10 @@ if __name__ == '__main__':
             api_results.append(mp.Queue())
         results = mp.Queue()
 
-        # Start detection MultiStick
-        print("Starting inferencer")
+        print("Starting inferencer and streaming")
         output = mp.Queue()
 
+        # Start inferencer
         p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results), daemon=True)
         p.start()
         processes.append(p)
@@ -348,11 +330,9 @@ if __name__ == '__main__':
                         if p2.exitcode is None:
                             p.terminate()
                     sys.exit(p.exitcode)
-
             sleep(1)
     except:
         import traceback
-
         traceback.print_exc()
     finally:
         for p in range(len(processes)):
