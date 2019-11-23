@@ -2,7 +2,7 @@
 
 This application runs the object detection algorithm YOLO on Intel Neural Compute Sticks and uses a browser based UI to display the predictions. The architecture of the system is as below.
 
-
+![Architecture Diagram](./Architecture_diagram.png)
 
 #### Client
 
