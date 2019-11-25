@@ -10,6 +10,7 @@ import CardDeck from 'react-bootstrap/CardDeck';
 import modelOptions from '../config/modelOptions';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import Loader from './Loader.js';
 import '../css/ObjectDetector.css';
 
 
@@ -22,7 +23,9 @@ class ObjectDetector extends Component {
       config:{
         coco_tiny_yolov3_320:{conf: '0.20', iou:'0.45'}
       },
-      execution_mode: 'parallel'
+      execution_mode: 'parallel',
+      loading: true,
+      loaded:new Set()
     }
   }
 
@@ -38,11 +41,27 @@ class ObjectDetector extends Component {
       config[model] = {conf: '0.20', iou:'0.45'};
     }
 
+    if (!this.state.loaded.has(model)) {
+      this.setState({
+        loading: true
+      });
+      fetch('http://localhost:5000/reload_models?models='+model,
+            {method:'get'})
+            .then(res => {
+              this.setState({
+                loading:false,
+                loaded: this.state.loaded.add(model),
+                models: models,
+                config: config
+              })
+            });
+    } else {
+      this.setState({
+        models: models,
+        config: config
+      })
+    }
 
-    this.setState({
-      models: models,
-      config: config
-    });
   }
 
   updateConf = event => {
@@ -74,8 +93,19 @@ class ObjectDetector extends Component {
     this.props.back();
   }
 
+  componentDidMount() {
+    fetch('http://localhost:5000/reload_models?models=coco_tiny_yolov3_320',
+          {method:'get'})
+          .then(res => {
+            this.setState({
+              loading:false,
+              loaded: this.state.loaded.add('coco_tiny_yolov3_320')
+            })
+          })
+  }
 
   render() {
+
     let showScreen = this.state.execution_mode && this.state.models.size!==0;
 
     let screen = null;
@@ -96,6 +126,9 @@ class ObjectDetector extends Component {
           <Button variant="link" onClick={this.backButton} className="backButton">
             <i className="fa fa-arrow-circle-left fa-2x" aria-hidden="true"></i>
           </Button>
+        </Row>
+        <Row>
+          {this.state.loading? <Loader/> : null}
         </Row>
         <Row className="topRow">
           <Col md={3}>
