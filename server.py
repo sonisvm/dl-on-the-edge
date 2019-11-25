@@ -154,7 +154,7 @@ def reload_models():
             while not q.empty():
                 q.get()
         inf_ready_queue.get()
-        sleep(1)
+        sleep(0.5)
     return jsonify(model_names), 201
 
 

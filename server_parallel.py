@@ -336,10 +336,13 @@ if __name__ == '__main__':
         p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results, inf_ready_queue, MODELS_IN_USE), daemon=True)
         p.start()
         while True:
-            models = admin_queue.get()
+            models = set(admin_queue.get())
+            if MODELS_IN_USE == models:
+                inf_ready_queue.put("")
+                continue
             while MODELS_IN_USE:
                 MODELS_IN_USE.pop()
-            MODELS_IN_USE.update(set(models))
+            MODELS_IN_USE.update(models)
             print("RELOADING", MODELS_IN_USE)
             p.terminate()
             p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results, inf_ready_queue, MODELS_IN_USE), daemon=True)
