@@ -24,8 +24,7 @@ class ObjectDetector extends Component {
         coco_tiny_yolov3_320:{conf: '0.20', iou:'0.45'}
       },
       execution_mode: 'parallel',
-      loading: true,
-      loaded:new Set()
+      loading: false
     }
   }
 
@@ -41,27 +40,24 @@ class ObjectDetector extends Component {
       config[model] = {conf: '0.20', iou:'0.45'};
     }
 
-    if (!this.state.loaded.has(model)) {
-      this.setState({
-        loading: true
-      });
-      fetch('http://localhost:5000/reload_models?models='+model,
-            {method:'get'})
-            .then(res => {
-              this.setState({
-                loading:false,
-                loaded: this.state.loaded.add(model),
-                models: models,
-                config: config
-              })
-            });
-    } else {
-      this.setState({
-        models: models,
-        config: config
-      })
-    }
+    this.setState({
+      models: models,
+      config: config
+    });
 
+  }
+
+  loadModels = ()=>{
+    this.setState({
+      loading: true
+    });
+    fetch('http://localhost:5000/reload_models?models='+Array.from(this.state.models).toString(),
+          {method:'get'})
+          .then(res => {
+            this.setState({
+              loading:false
+            })
+          });
   }
 
   updateConf = event => {
@@ -91,17 +87,6 @@ class ObjectDetector extends Component {
       execution_mode: 'parallel'
     });
     this.props.back();
-  }
-
-  componentDidMount() {
-    fetch('http://localhost:5000/reload_models?models=coco_tiny_yolov3_320',
-          {method:'get'})
-          .then(res => {
-            this.setState({
-              loading:false,
-              loaded: this.state.loaded.add('coco_tiny_yolov3_320')
-            })
-          })
   }
 
   render() {
@@ -170,6 +155,9 @@ class ObjectDetector extends Component {
                       );
                     })}
                   </Form>
+                  <Button variant="link" onClick={this.loadModels} className="controlBtn">
+                    Load Models
+                  </Button>
                 </Card.Body>
               </Card>
               <Card className="options">
