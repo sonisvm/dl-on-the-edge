@@ -7,6 +7,9 @@ import itertools
 import base64
 import heapq
 import logging
+from threading import Lock
+
+from time import sleep
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -14,12 +17,16 @@ framebuffers = []
 models = {}
 frameId = 0
 model_results = None
+reload_queue = None  # send model_names as msg to reload
+inf_ready_queue = None
 fps_stats = []
 app = Flask(__name__)
 CORS(app)
-
+reload_model_lock = Lock()
 
 def detect(image, model, frameid, conf=0.2, iou=0.45, mode="parallel"):
+    if framebuffers[models[model]].full():
+        framebuffers[models[model]].get(False)
     framebuffers[models[model]].put((frameid, image, float(conf), float(iou), mode))
 
 
@@ -27,10 +34,15 @@ def base64tocv2(s):
     return cv2.imdecode(np.fromstring(base64.decodebytes(str.encode(s.split(',')[-1])), dtype=np.uint8), 1)
 
 
-def init(apiresults, MODELS_IN_USE, frameBuffers):
+def init(apiresults, MODELS_IN_USE, frameBuffers, adminQueue, infReadyQueue):
     global models
     global framebuffers
     global model_results
+    global reload_queue
+    global inf_ready_queue
+
+    reload_queue = adminQueue
+    inf_ready_queue = infReadyQueue
 
     for mi, model in enumerate(MODELS_IN_USE):
         models[model[0]] = mi
@@ -102,8 +114,7 @@ def detect_objects_response():
             if t_iou < min_t_iou:
                 min_t_iou = t_iou  # TODO: allow user to specify this param
         except:
-            import traceback
-            traceback.print_exc()
+            pass
         response[model_name] = objects_detected
     if execution_mode == 'ensemble':
         objects = list(sorted(list(itertools.chain.from_iterable(response.values())),
@@ -128,6 +139,23 @@ def detect_objects_response():
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.route('/reload_models', methods=['GET'])
+def reload_models():
+    with reload_model_lock:
+        model_names = request.args.get('models', "")
+        model_names = model_names.split(",") if model_names else []
+        model_names = [m for m in model_names if m in models]
+        if not model_names:
+            return
+        reload_queue.put(model_names)
+        for q in framebuffers + model_results:
+            while not q.empty():
+                q.get()
+        inf_ready_queue.get()
+        sleep(1)
+    return jsonify(model_names), 201
 
 
 @app.route('/shutdown', methods=['POST'])

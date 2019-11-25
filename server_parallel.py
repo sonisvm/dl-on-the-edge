@@ -18,25 +18,28 @@ with open('./data/%s.names' % DATASET, 'r') as f:
         if len(class_name) > 0:
             class_names.append(class_name)
 
-MODELS_IN_USE = (  # NOTE: change models and input size here
+ALL_MODELS = (  # NOTE: change models and input size here
     ("coco_tiny_yolov3_320", 320),
     ("coco_tiny_yolov3_352", 352),
     ("coco_tiny_yolov3_384", 384),
-    # ("coco_tiny_yolov3_416", 416),
-    # ("coco_tiny_yolov3_448", 448),
-    # ("coco_tiny_yolov3_480", 480),
-    # ("coco_tiny_yolov3_512", 512),
-    # ("coco_tiny_yolov3_544", 544),
-    # ("coco_tiny_yolov3_576", 576),
-    # ("coco_tiny_yolov3_608", 608),
+    ("coco_tiny_yolov3_416", 416),
+    ("coco_tiny_yolov3_448", 448),
+    ("coco_tiny_yolov3_480", 480),
+    ("coco_tiny_yolov3_512", 512),
+    ("coco_tiny_yolov3_544", 544),
+    ("coco_tiny_yolov3_576", 576),
+    ("coco_tiny_yolov3_608", 608),
 )
+MODELS_IN_USE = {"coco_tiny_yolov3_320"}
 
 
-def server(frameBuffers, api_results):
+def server(frameBuffers, admin_queue, inf_ready_queue, api_results):
     from server import app, init
-    init(api_results, MODELS_IN_USE, frameBuffers)
+    init(api_results, ALL_MODELS, frameBuffers, admin_queue, inf_ready_queue)
+    inf_ready_queue.get()
     while True:
         app.run(debug=False, host="0.0.0.0")
+
 
 
 class DetectionObject(object):
@@ -259,16 +262,22 @@ class NcsWorker(object):
             traceback.print_exc()
 
 
-def inferencer(results, frameBuffers, number_of_ncs, api_results, sleep_time=2):
+def inferencer(results, frameBuffers, number_of_ncs, api_results, inf_ready_queue, models_in_use, sleep_time=2):
     threads = []
 
-    plugin = None
     for devid in range(number_of_ncs):
         print("Plugin the device in now")
-        for mi, model in enumerate(MODELS_IN_USE):
+        plugin = None
+        plugin_created = False
+        loaded_model_count = 0
+        for model_name in models_in_use:
+            for mi in range(len(ALL_MODELS)):
+                model = ALL_MODELS[mi]
+                if model[0] == model_name:
+                    break
             while True:
                 try:
-                    if mi == 0:
+                    if not plugin_created:
                         plugin = IEPlugin(device="MYRIAD")  # TODO: Keep creating new IEPlugin if failed?
                         print('[Device %d/%d] IEPlugin initialized' % (devid + 1, number_of_ncs))
                     model_name, input_size = model
@@ -282,13 +291,16 @@ def inferencer(results, frameBuffers, number_of_ncs, api_results, sleep_time=2):
                     thworker.start()
                     threads.append(thworker)
                     print('[Device %d/%d] %d/%d models loaded to the IEPlugin' % (devid + 1, number_of_ncs,
-                                                                                  mi + 1, len(MODELS_IN_USE)))
+                                                                                  loaded_model_count + 1, len(models_in_use)))
+                    loaded_model_count += 1
+                    plugin_created = True
                     break
                 except RuntimeError:
                     print("Failed, trying again in %d second(s)" % sleep_time)
                     sleep(sleep_time)
         print('[Device %d/%d] Initialization finished' % (devid + 1, number_of_ncs))
     print('All devices and models are initialized. Start serving detection requests...')
+    inf_ready_queue.put("")
     for th in threads:
         th.join()
 
@@ -305,32 +317,42 @@ if __name__ == '__main__':
         frameBuffers = []
         api_results = []
 
-        for _ in MODELS_IN_USE:
+        for _ in ALL_MODELS:
             frameBuffers.append(mp.Queue(10))
             api_results.append(mp.Queue())
         results = mp.Queue()
 
         print("Starting inferencer and streaming")
         output = mp.Queue()
+        admin_queue = mp.Queue()
+        inf_ready_queue = mp.Queue()
 
         # Start inferencer
-        p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results), daemon=True)
+        p = mp.Process(target=server, args=(frameBuffers, admin_queue, inf_ready_queue, api_results), daemon=True)
         p.start()
         processes.append(p)
 
         # Start streaming
-        p = mp.Process(target=server, args=(frameBuffers, api_results), daemon=True)
+        p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results, inf_ready_queue, MODELS_IN_USE), daemon=True)
         p.start()
-        processes.append(p)
-
         while True:
-            for p in processes:
-                if p.exitcode is not None:
-                    for p2 in processes:
-                        if p2.exitcode is None:
-                            p.terminate()
-                    sys.exit(p.exitcode)
-            sleep(1)
+            models = admin_queue.get()
+            while MODELS_IN_USE:
+                MODELS_IN_USE.pop()
+            MODELS_IN_USE.update(set(models))
+            print("RELOADING", MODELS_IN_USE)
+            p.terminate()
+            p = mp.Process(target=inferencer, args=(results, frameBuffers, number_of_ncs, api_results, inf_ready_queue, MODELS_IN_USE), daemon=True)
+            p.start()
+
+        # while True:
+        #     for p in processes:
+        #         if p.exitcode is not None:
+        #             for p2 in processes:
+        #                 if p2.exitcode is None:
+        #                     p.terminate()
+        #             sys.exit(p.exitcode)
+        #     sleep(1)
     except:
         import traceback
         traceback.print_exc()
