@@ -25,7 +25,10 @@ The server is a simple Flask server. **TO DO**.
 
 To run the server:
 1. pip install Flask (prefered in virtualenv) https://flask.palletsprojects.com/en/1.1.x/installation/
-2. run `python3 server.py`
+2. setup OpenVINO env as instructed by Intel
+3. run `python3 server_paralel.py`
+4. plugin the device when you see the instruction, one by one
+
 
 The server supports two APIs
 
