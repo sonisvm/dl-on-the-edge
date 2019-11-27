@@ -31,6 +31,7 @@ ALL_MODELS = (  # NOTE: change models and input size here
     ("coco_tiny_yolov3_608", 608),
 )
 MODELS_IN_USE = {"coco_tiny_yolov3_320"}
+MODELS_IN_USE = set()
 
 
 def server(frameBuffers, admin_queue, inf_ready_queue, api_results):
@@ -267,7 +268,7 @@ def inferencer(results, frameBuffers, number_of_ncs, api_results, inf_ready_queu
 
     for devid in range(number_of_ncs):
         print("Plugin the device in now")
-        plugin = None
+        plugin = IEPlugin(device="MYRIAD")
         plugin_created = False
         loaded_model_count = 0
         for model_name in models_in_use:
@@ -278,7 +279,7 @@ def inferencer(results, frameBuffers, number_of_ncs, api_results, inf_ready_queu
             while True:
                 try:
                     if not plugin_created:
-                        plugin = IEPlugin(device="MYRIAD")  # TODO: Keep creating new IEPlugin if failed?
+                        # plugin = IEPlugin(device="MYRIAD")  # TODO: Keep creating new IEPlugin if failed?
                         print('[Device %d/%d] IEPlugin initialized' % (devid + 1, number_of_ncs))
                     model_name, input_size = model
                     thworker = threading.Thread(target=async_infer, args=(
