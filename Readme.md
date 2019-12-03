@@ -20,7 +20,7 @@ The client runs on port 3000.
 
 #### Server
 
-The server is a simple Flask server. **TO DO**. 
+The server is a simple Flask server.
 
 
 To run the server:
@@ -117,3 +117,6 @@ The server supports two APIs
 	}
 	```
 
+#### Demo
+
+[![](http://img.youtube.com/vi/-qs5oX4c-qU/0.jpg)](http://www.youtube.com/watch?v=-qs5oX4c-qU "Demo")
